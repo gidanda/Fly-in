@@ -3,6 +3,7 @@
 from collections.abc import Iterable
 
 from fly_in.connection import Connection
+from fly_in.errors import MapDefinitionError
 from fly_in.zone import Zone, ZoneRole
 
 
@@ -102,9 +103,11 @@ class DroneMap:
     def _register_zone(self, zone: Zone) -> None:
         """Add one zone to the internal indexes."""
         if zone.id in self._zones:
-            raise ValueError(f"Duplicate zone ID: {zone.id}")
+            raise MapDefinitionError(f"Duplicate zone ID: {zone.id}")
         if zone.name in self._zone_ids_by_name:
-            raise ValueError(f"Duplicate zone name: {zone.name}")
+            raise MapDefinitionError(
+                f"Duplicate zone name: {zone.name}"
+            )
 
         self._zones[zone.id] = zone
         self._zone_ids_by_name[zone.name] = zone.id
@@ -113,21 +116,21 @@ class DroneMap:
     def _register_connection(self, connection: Connection) -> None:
         """Add one connection to the internal indexes."""
         if connection.id in self._connections:
-            raise ValueError(
+            raise MapDefinitionError(
                 f"Duplicate connection ID: {connection.id}"
             )
         if not self.has_zone(connection.zone_a_id):
-            raise ValueError(
+            raise MapDefinitionError(
                 f"Unknown zone ID in connection: {connection.zone_a_id}"
             )
         if not self.has_zone(connection.zone_b_id):
-            raise ValueError(
+            raise MapDefinitionError(
                 f"Unknown zone ID in connection: {connection.zone_b_id}"
             )
 
         pair = frozenset((connection.zone_a_id, connection.zone_b_id))
         if pair in self._connection_ids_by_pair:
-            raise ValueError(
+            raise MapDefinitionError(
                 "Duplicate connection between zones "
                 f"{connection.zone_a_id} and {connection.zone_b_id}"
             )
@@ -147,7 +150,7 @@ class DroneMap:
             zone.id for zone in self._zones.values() if zone.role is role
         ]
         if len(matching_ids) != 1:
-            raise ValueError(
+            raise MapDefinitionError(
                 f"Map must contain exactly one {role.value} zone"
             )
         return matching_ids[0]

@@ -4,6 +4,7 @@ import pytest
 
 from fly_in.connection import Connection
 from fly_in.drone_map import DroneMap
+from fly_in.errors import MapDefinitionError
 from fly_in.zone import Zone, ZoneRole, ZoneType
 
 
@@ -103,5 +104,5 @@ def test_duplicate_connection_pair_is_rejected() -> None:
         Connection(2, 2, 1, 1),
     ]
 
-    with pytest.raises(ValueError, match="Duplicate connection"):
+    with pytest.raises(MapDefinitionError, match="Duplicate connection"):
         DroneMap(zones, connections)

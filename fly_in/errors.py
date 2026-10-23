@@ -7,6 +7,14 @@ class FlyInError(Exception):
     """Base class for expected Fly-in errors."""
 
 
+class MapDefinitionError(FlyInError):
+    """Report a structurally invalid map definition."""
+
+
+class DroneStateError(FlyInError):
+    """Report an operation incompatible with a drone's current state."""
+
+
 class MapParseError(FlyInError):
     """Report invalid content found while parsing a map file."""
 
