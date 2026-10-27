@@ -7,6 +7,8 @@ from fly_in.errors import (
     FlyInError,
     MapDefinitionError,
     MapParseError,
+    PlanningError,
+    TurnValidationError,
 )
 
 
@@ -20,6 +22,18 @@ def test_map_parse_error_is_a_fly_in_error() -> None:
 def test_drone_state_error_is_a_fly_in_error() -> None:
     """Drone state failures can be caught through the common base class."""
     assert isinstance(DroneStateError("Invalid transition"), FlyInError)
+
+
+def test_turn_validation_error_is_a_fly_in_error() -> None:
+    """Invalid turn plans can be caught through the common base class."""
+    error = TurnValidationError("Connection capacity exceeded")
+
+    assert isinstance(error, FlyInError)
+
+
+def test_planning_error_is_a_fly_in_error() -> None:
+    """Planning failures can be caught through the common base class."""
+    assert isinstance(PlanningError("No progress"), FlyInError)
 
 
 def test_map_errors_are_sibling_classes() -> None:

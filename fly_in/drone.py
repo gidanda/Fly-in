@@ -52,63 +52,59 @@ class Finished:
 DroneState = AtZone | InTransit | Finished
 
 
+@dataclass(frozen=True)
 class Drone:
-    """Keep one drone's immutable identity and current dynamic state."""
+    """Represent one drone at one immutable point in time."""
 
-    def __init__(self, id: int, state: DroneState) -> None:
-        """Create a drone with a positive ID and a valid state."""
-        _validate_positive_integer(id, "id")
-        if not isinstance(state, (AtZone, InTransit, Finished)):
+    id: int
+    state: DroneState
+
+    def __post_init__(self) -> None:
+        """Validate the drone identifier and state."""
+        _validate_positive_integer(self.id, "id")
+        if not isinstance(self.state, (AtZone, InTransit, Finished)):
             raise ValueError("state must be a valid drone state")
-        self._id = id
-        self._state = state
-
-    @property
-    def id(self) -> int:
-        """Return this drone's immutable identifier."""
-        return self._id
-
-    @property
-    def state(self) -> DroneState:
-        """Return this drone's current state."""
-        return self._state
 
     def start_move(
         self,
         connection_id: int,
         destination_zone_id: int,
         travel_turns: int,
-    ) -> None:
-        """Change a zone-bound drone into an in-transit state."""
-        if not isinstance(self._state, AtZone):
+    ) -> "Drone":
+        """Return this zone-bound drone in a new in-transit state."""
+        if not isinstance(self.state, AtZone):
             raise DroneStateError(
                 "Only a drone at a zone can start moving"
             )
-        if destination_zone_id == self._state.zone_id:
+        if destination_zone_id == self.state.zone_id:
             raise ValueError("destination zone must differ from current zone")
 
-        self._state = InTransit(
-            connection_id=connection_id,
-            destination_zone_id=destination_zone_id,
-            remaining_turns=travel_turns,
+        return Drone(
+            id=self.id,
+            state=InTransit(
+                connection_id=connection_id,
+                destination_zone_id=destination_zone_id,
+                remaining_turns=travel_turns,
+            ),
         )
 
-    def advance_one_turn(self, destination_is_goal: bool) -> None:
-        """Advance an in-transit drone by one turn, including arrival."""
-        if not isinstance(self._state, InTransit):
+    def advance_one_turn(self, destination_is_goal: bool) -> "Drone":
+        """Return this in-transit drone after one turn of travel."""
+        if not isinstance(self.state, InTransit):
             raise DroneStateError(
                 "Only an in-transit drone can advance one turn"
             )
 
-        if self._state.remaining_turns > 1:
-            self._state = InTransit(
-                connection_id=self._state.connection_id,
-                destination_zone_id=self._state.destination_zone_id,
-                remaining_turns=self._state.remaining_turns - 1,
+        if self.state.remaining_turns > 1:
+            return Drone(
+                id=self.id,
+                state=InTransit(
+                    connection_id=self.state.connection_id,
+                    destination_zone_id=self.state.destination_zone_id,
+                    remaining_turns=self.state.remaining_turns - 1,
+                ),
             )
-            return
 
         if destination_is_goal:
-            self._state = Finished()
-        else:
-            self._state = AtZone(self._state.destination_zone_id)
+            return Drone(self.id, Finished())
+        return Drone(self.id, AtZone(self.state.destination_zone_id))

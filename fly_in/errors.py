@@ -15,6 +15,14 @@ class DroneStateError(FlyInError):
     """Report an operation incompatible with a drone's current state."""
 
 
+class TurnValidationError(FlyInError):
+    """Report a turn plan that cannot run from the current state."""
+
+
+class PlanningError(FlyInError):
+    """Report that the planner cannot produce a progressing turn."""
+
+
 class MapParseError(FlyInError):
     """Report invalid content found while parsing a map file."""
 

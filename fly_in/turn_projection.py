@@ -3,9 +3,12 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import TYPE_CHECKING
 
-from fly_in.drone import AtZone, DroneState, Finished, InTransit
 from fly_in.turn_plan import TurnPlan
+
+if TYPE_CHECKING:
+    from fly_in.simulation_state import SimulationState
 
 
 def _validate_non_negative_integer(value: int, field_name: str) -> None:
@@ -34,7 +37,7 @@ class TurnProjection:
 
     source_turn: int
     plan: TurnPlan
-    projected_drone_states: Mapping[int, DroneState]
+    next_state: "SimulationState"
     connection_users: Mapping[int, frozenset[int]]
 
     def __post_init__(self) -> None:
@@ -42,18 +45,18 @@ class TurnProjection:
         _validate_non_negative_integer(self.source_turn, "source_turn")
         if not isinstance(self.plan, TurnPlan):
             raise ValueError("plan must be a TurnPlan")
-        if not isinstance(self.projected_drone_states, Mapping):
-            raise ValueError("projected_drone_states must be a mapping")
+        from fly_in.simulation_state import SimulationState
+
+        if not isinstance(self.next_state, SimulationState):
+            raise ValueError("next_state must be a SimulationState")
+        if self.next_state.current_turn != self.source_turn + 1:
+            raise ValueError(
+                "next_state must be exactly one turn after source_turn"
+            )
         if not isinstance(self.connection_users, Mapping):
             raise ValueError("connection_users must be a mapping")
 
-        drone_states = dict(self.projected_drone_states)
-        if not drone_states:
-            raise ValueError("projected_drone_states must not be empty")
-        for drone_id, state in drone_states.items():
-            _validate_positive_integer(drone_id, "drone_id")
-            if not isinstance(state, (AtZone, InTransit, Finished)):
-                raise ValueError("projected state must be a DroneState")
+        drone_ids = self.next_state.drones.keys()
 
         connection_users: dict[int, frozenset[int]] = {}
         seen_user_ids: set[int] = set()
@@ -63,9 +66,9 @@ class TurnProjection:
                 raise ValueError("connection users must be a frozenset")
             for drone_id in user_ids:
                 _validate_positive_integer(drone_id, "drone_id")
-                if drone_id not in drone_states:
+                if drone_id not in drone_ids:
                     raise ValueError(
-                        "connection user must exist in projected drone states"
+                        "connection user must exist in next state"
                     )
             duplicate_ids = seen_user_ids.intersection(user_ids)
             if duplicate_ids:
@@ -78,20 +81,15 @@ class TurnProjection:
         planned_drone_ids = {
             move.drone_id for move in self.plan.moves
         }
-        if not planned_drone_ids.issubset(drone_states):
+        if not planned_drone_ids.issubset(drone_ids):
             raise ValueError(
-                "planned drone must exist in projected drone states"
+                "planned drone must exist in next state"
             )
         if not planned_drone_ids.issubset(seen_user_ids):
             raise ValueError(
                 "planned drone must use a connection in the projection"
             )
 
-        object.__setattr__(
-            self,
-            "projected_drone_states",
-            MappingProxyType(drone_states),
-        )
         object.__setattr__(
             self,
             "connection_users",

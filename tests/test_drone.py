@@ -43,8 +43,8 @@ def test_drone_rejects_invalid_id_and_state() -> None:
         Drone(1, object())  # type: ignore[arg-type]
 
 
-def test_drone_identity_and_state_are_read_only() -> None:
-    """Callers can observe but cannot directly replace drone fields."""
+def test_drone_is_immutable() -> None:
+    """Callers can observe but cannot replace either drone field."""
     drone = Drone(1, AtZone(2))
 
     assert drone.id == 1
@@ -55,13 +55,14 @@ def test_drone_identity_and_state_are_read_only() -> None:
         setattr(drone, "state", Finished())
 
 
-def test_start_move_changes_at_zone_to_in_transit() -> None:
-    """An at-zone drone can start an authorized movement."""
+def test_start_move_returns_new_in_transit_drone() -> None:
+    """Moving returns a new snapshot and preserves the original."""
     drone = Drone(1, AtZone(2))
 
-    drone.start_move(3, 4, 2)
+    moved_drone = drone.start_move(3, 4, 2)
 
-    assert drone.state == InTransit(3, 4, 2)
+    assert moved_drone == Drone(1, InTransit(3, 4, 2))
+    assert drone == Drone(1, AtZone(2))
 
 
 @pytest.mark.parametrize("state", [InTransit(1, 2, 1), Finished()])
@@ -87,27 +88,30 @@ def test_advance_one_turn_decrements_remaining_turns() -> None:
     """A non-arriving drone remains in transit for one fewer turn."""
     drone = Drone(1, InTransit(3, 4, 2))
 
-    drone.advance_one_turn(destination_is_goal=False)
+    advanced_drone = drone.advance_one_turn(destination_is_goal=False)
 
-    assert drone.state == InTransit(3, 4, 1)
+    assert advanced_drone == Drone(1, InTransit(3, 4, 1))
+    assert drone == Drone(1, InTransit(3, 4, 2))
 
 
 def test_advance_one_turn_arrives_at_regular_zone() -> None:
     """A final travel turn places a drone at its destination zone."""
     drone = Drone(1, InTransit(3, 4, 1))
 
-    drone.advance_one_turn(destination_is_goal=False)
+    advanced_drone = drone.advance_one_turn(destination_is_goal=False)
 
-    assert drone.state == AtZone(4)
+    assert advanced_drone == Drone(1, AtZone(4))
+    assert drone == Drone(1, InTransit(3, 4, 1))
 
 
 def test_advance_one_turn_finishes_at_goal() -> None:
     """A final travel turn marks a drone whose destination is the goal."""
     drone = Drone(1, InTransit(3, 4, 1))
 
-    drone.advance_one_turn(destination_is_goal=True)
+    advanced_drone = drone.advance_one_turn(destination_is_goal=True)
 
-    assert drone.state == Finished()
+    assert advanced_drone == Drone(1, Finished())
+    assert drone == Drone(1, InTransit(3, 4, 1))
 
 
 @pytest.mark.parametrize("state", [AtZone(1), Finished()])

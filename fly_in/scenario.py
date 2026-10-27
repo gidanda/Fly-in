@@ -13,6 +13,10 @@ class Scenario:
     drone_count: int
 
     def __post_init__(self) -> None:
-        """Ensure every scenario contains at least one drone."""
-        if self.drone_count < 1:
-            raise ValueError("drone_count must be at least 1")
+        """Ensure every scenario contains a positive integer count."""
+        if (
+            not isinstance(self.drone_count, int)
+            or isinstance(self.drone_count, bool)
+            or self.drone_count < 1
+        ):
+            raise ValueError("drone_count must be a positive integer")
