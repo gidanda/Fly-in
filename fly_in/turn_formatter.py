@@ -3,11 +3,16 @@
 from fly_in.drone import AtZone, Drone, Finished, InTransit
 from fly_in.drone_map import DroneMap
 from fly_in.simulation_state import SimulationState
+from fly_in.terminal_colors import colorize
 from fly_in.turn_projection import TurnProjection
 
 
 class TurnFormatter:
     """Build one output line from the state change of a turn."""
+
+    def __init__(self, use_color: bool = False) -> None:
+        """Choose whether formatted movements include ANSI colors."""
+        self._use_color = use_color
 
     def format_turn(
         self,
@@ -54,7 +59,8 @@ class TurnFormatter:
                     drone_map,
                 )
             if isinstance(after.state, InTransit):
-                return f"D{after.id}-C{after.state.connection_id}"
+                movement = f"D{after.id}-C{after.state.connection_id}"
+                return self._apply_color(movement, "cyan")
 
         if isinstance(before.state, InTransit):
             if isinstance(after.state, AtZone):
@@ -84,4 +90,11 @@ class TurnFormatter:
     ) -> str:
         """Return one drone's arrival using the destination zone name."""
         zone = drone_map.get_zone(zone_id)
-        return f"D{drone_id}-{zone.name}"
+        movement = f"D{drone_id}-{zone.name}"
+        return self._apply_color(movement, zone.color)
+
+    def _apply_color(self, text: str, color_name: str | None) -> str:
+        """Apply a display color only when color output is enabled."""
+        if not self._use_color:
+            return text
+        return colorize(text, color_name)

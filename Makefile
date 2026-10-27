@@ -15,7 +15,7 @@ check-map:
 	fi
 
 run: check-map
-	$(VENV_PYTHON) -m fly_in "$(MAP)"
+	@$(VENV_PYTHON) -m fly_in "$(MAP)"
 
 debug: check-map
 	$(VENV_PYTHON) -m pdb -m fly_in "$(MAP)"

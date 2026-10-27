@@ -39,7 +39,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         state = SimulationState(scenario)
         pathfinder = Pathfinder(scenario.drone_map)
         planner = TurnPlanner(pathfinder)
-        formatter = TurnFormatter()
+        formatter = TurnFormatter(use_color=sys.stdout.isatty())
         runner = SimulationRunner(planner, formatter)
         runner.run(state)
     except (FlyInError, OSError, UnicodeError) as error:
