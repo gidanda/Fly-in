@@ -58,6 +58,21 @@ def test_parser_builds_expected_scenario(tmp_path: Path) -> None:
     assert drone_map.get_connection(2).max_capacity == 1
 
 
+def test_regular_hub_can_be_blocked(tmp_path: Path) -> None:
+    """The endpoint restriction does not prohibit blocked regular hubs."""
+    map_path = write_map(
+        tmp_path,
+        "nb_drones: 1\n"
+        "start_hub: start 0 0\n"
+        "hub: obstacle 1 0 [zone=blocked]\n"
+        "end_hub: goal 2 0\n",
+    )
+
+    scenario = MapParser().parse_file(map_path)
+
+    assert scenario.drone_map.get_zone(2).zone_type is ZoneType.BLOCKED
+
+
 @pytest.mark.parametrize(
     ("content", "message", "line_number"),
     [
@@ -117,6 +132,18 @@ def test_parser_builds_expected_scenario(tmp_path: Path) -> None:
             "end_hub: b 1 0\n",
             "Invalid zone type",
             2,
+        ),
+        (
+            "nb_drones: 1\nstart_hub: a 0 0 [zone=blocked]\n"
+            "end_hub: b 1 0\n",
+            "start_hub cannot be blocked",
+            2,
+        ),
+        (
+            "nb_drones: 1\nstart_hub: a 0 0\n"
+            "end_hub: b 1 0 [zone=blocked]\n",
+            "end_hub cannot be blocked",
+            3,
         ),
         (
             "nb_drones: 1\nstart_hub: a 0 0 [color=red color=blue]\n"

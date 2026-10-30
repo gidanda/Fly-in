@@ -44,7 +44,7 @@ class SimulationState:
         drones: Mapping[int, Drone],
         current_turn: int,
     ) -> "SimulationState":
-        """Build an internally validated next-turn state snapshot."""
+        """Build a next-turn snapshot from caller-validated data."""
         simulation = cls.__new__(cls)
         simulation._drone_map = drone_map
         simulation._drones = dict(drones)
@@ -131,11 +131,6 @@ class SimulationState:
                 )
 
             source_zone_id = drone.state.zone_id
-            if not self._drone_map.has_zone(source_zone_id):
-                raise TurnValidationError(
-                    f"Drone {move.drone_id} occupies unknown zone "
-                    f"{source_zone_id}"
-                )
             if not self._drone_map.has_zone(move.destination_zone_id):
                 raise TurnValidationError(
                     f"Unknown destination zone ID: "
@@ -179,41 +174,13 @@ class SimulationState:
         self,
         resolved_moves: Mapping[int, _ResolvedMove],
     ) -> dict[int, frozenset[int]]:
-        """Collect every drone that uses each connection this turn."""
+        """Collect connection users, trusting validated existing transit."""
         mutable_users: dict[int, set[int]] = {}
 
         for drone in self._drones.values():
             state = drone.state
             if not isinstance(state, InTransit):
                 continue
-            if not self._drone_map.has_connection(state.connection_id):
-                raise TurnValidationError(
-                    f"Drone {drone.id} uses unknown connection "
-                    f"{state.connection_id}"
-                )
-            if not self._drone_map.has_zone(state.destination_zone_id):
-                raise TurnValidationError(
-                    f"Drone {drone.id} is traveling to unknown zone "
-                    f"{state.destination_zone_id}"
-                )
-
-            connection = self._drone_map.get_connection(
-                state.connection_id
-            )
-            if not connection.connects(state.destination_zone_id):
-                raise TurnValidationError(
-                    f"Drone {drone.id} has a destination outside "
-                    f"connection {state.connection_id}"
-                )
-            destination = self._drone_map.get_zone(
-                state.destination_zone_id
-            )
-            if not destination.is_accessible():
-                raise TurnValidationError(
-                    f"Drone {drone.id} is traveling to blocked zone "
-                    f"{state.destination_zone_id}"
-                )
-
             mutable_users.setdefault(state.connection_id, set()).add(
                 drone.id
             )
@@ -281,15 +248,10 @@ class SimulationState:
         """Reject a turn whose end state overfills any zone."""
         occupancy: dict[int, int] = {}
 
-        for drone_id, drone in projected_drones.items():
+        for drone in projected_drones.values():
             state = drone.state
             if not isinstance(state, AtZone):
                 continue
-            if not self._drone_map.has_zone(state.zone_id):
-                raise TurnValidationError(
-                    f"Drone {drone_id} occupies unknown zone "
-                    f"{state.zone_id}"
-                )
             occupancy[state.zone_id] = occupancy.get(state.zone_id, 0) + 1
 
         for zone_id, drone_count in occupancy.items():

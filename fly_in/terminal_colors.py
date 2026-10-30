@@ -27,7 +27,7 @@ _FALLBACK_RGB: RGBColor = (255, 0, 255)
 
 
 def colorize(text: str, color_name: str | None) -> str:
-    """Return text in a named ANSI color, or unchanged when unsupported."""
+    """Use a named color, magenta for unknown names, or no color for None."""
     if color_name is None:
         return text
 

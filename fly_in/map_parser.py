@@ -321,6 +321,13 @@ class MapParser:
         color = metadata.get("color")
         max_drones: int | None
         if role in (ZoneRole.START, ZoneRole.END):
+            if zone_type is ZoneType.BLOCKED:
+                raise MapParseError(
+                    file_path,
+                    f"{match.group('kind')} cannot be blocked",
+                    line_number,
+                    line,
+                )
             max_drones = None
         else:
             max_drones_text = metadata.get("max_drones", "1")

@@ -71,14 +71,7 @@ class Drone:
         destination_zone_id: int,
         travel_turns: int,
     ) -> "Drone":
-        """Return this zone-bound drone in a new in-transit state."""
-        if not isinstance(self.state, AtZone):
-            raise DroneStateError(
-                "Only a drone at a zone can start moving"
-            )
-        if destination_zone_id == self.state.zone_id:
-            raise ValueError("destination zone must differ from current zone")
-
+        """Return a new in-transit drone after caller-side move validation."""
         return Drone(
             id=self.id,
             state=InTransit(

@@ -1,4 +1,4 @@
-"""Tests for scenario data and validation."""
+"""Tests for scenario data storage."""
 
 from dataclasses import FrozenInstanceError
 
@@ -45,15 +45,6 @@ def test_scenario_stores_map_and_drone_count() -> None:
 
     assert scenario.drone_map is drone_map
     assert scenario.drone_count == 3
-
-
-@pytest.mark.parametrize("drone_count", [0, -1, True, 1.5])
-def test_scenario_rejects_invalid_drone_count(
-    drone_count: object,
-) -> None:
-    """A scenario requires a positive integer count, excluding booleans."""
-    with pytest.raises(ValueError, match="positive integer"):
-        Scenario(make_map(), drone_count)  # type: ignore[arg-type]
 
 
 def test_scenario_is_immutable() -> None:

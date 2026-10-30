@@ -65,25 +65,6 @@ def test_start_move_returns_new_in_transit_drone() -> None:
     assert drone == Drone(1, AtZone(2))
 
 
-@pytest.mark.parametrize("state", [InTransit(1, 2, 1), Finished()])
-def test_start_move_requires_at_zone_state(
-    state: InTransit | Finished,
-) -> None:
-    """Moving and finished drones cannot start another movement."""
-    drone = Drone(1, state)
-
-    with pytest.raises(DroneStateError, match="at a zone"):
-        drone.start_move(1, 2, 1)
-
-
-def test_start_move_rejects_current_zone_as_destination() -> None:
-    """A movement must lead to a different zone."""
-    drone = Drone(1, AtZone(2))
-
-    with pytest.raises(ValueError, match="differ"):
-        drone.start_move(1, 2, 1)
-
-
 def test_advance_one_turn_decrements_remaining_turns() -> None:
     """A non-arriving drone remains in transit for one fewer turn."""
     drone = Drone(1, InTransit(3, 4, 2))

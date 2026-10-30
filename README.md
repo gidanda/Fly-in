@@ -92,6 +92,10 @@ hub: tunnel 2 0 [zone=restricted color=purple max_drones=1]
 end_hub: goal 3 0 [color=blue]
 ```
 
+Start and end hubs cannot use `zone=blocked`; regular hubs may use it to
+represent inaccessible zones. The parser reports a source-aware error for a
+blocked start or end hub.
+
 Connections refer to zones that have already been declared:
 
 ```text
@@ -164,12 +168,16 @@ drones that reached a zone.
 ### 1. Parsing and static graph construction
 
 `MapParser` reads the file once and creates immutable `Zone` and `Connection`
-objects. `DroneMap` indexes them by ID, name, endpoint pair, and adjacency so
+objects. `DroneMap` indexes them by ID, endpoint pair, and adjacency so
 that later lookups do not repeatedly scan every definition.
 
 Syntax errors are reported as `MapParseError` values with the file path, line
 number, source text, and a specific cause. Cross-object map constraints are
-checked while `DroneMap` builds its indexes.
+validated by `MapParser` before `DroneMap` builds its indexes. `Scenario` and
+`DroneMap` trust these caller-validated values instead of repeating the input
+checks. Code constructing these objects directly must satisfy the same
+preconditions. `DroneMap` still rejects duplicate internal zone or connection
+IDs.
 
 ### 2. Reverse Dijkstra analysis
 
