@@ -3,16 +3,7 @@
 from dataclasses import dataclass
 
 from fly_in.errors import DroneStateError
-
-
-def _validate_positive_integer(value: int, field_name: str) -> None:
-    """Require an integer identifier or count greater than zero."""
-    if (
-        not isinstance(value, int)
-        or isinstance(value, bool)
-        or value < 1
-    ):
-        raise ValueError(f"{field_name} must be a positive integer")
+from fly_in.validation import validate_positive_integer
 
 
 @dataclass(frozen=True)
@@ -23,7 +14,7 @@ class AtZone:
 
     def __post_init__(self) -> None:
         """Validate the occupied zone identifier."""
-        _validate_positive_integer(self.zone_id, "zone_id")
+        validate_positive_integer(self.zone_id, "zone_id")
 
 
 @dataclass(frozen=True)
@@ -36,12 +27,12 @@ class InTransit:
 
     def __post_init__(self) -> None:
         """Validate identifiers and the remaining travel duration."""
-        _validate_positive_integer(self.connection_id, "connection_id")
-        _validate_positive_integer(
+        validate_positive_integer(self.connection_id, "connection_id")
+        validate_positive_integer(
             self.destination_zone_id,
             "destination_zone_id",
         )
-        _validate_positive_integer(self.remaining_turns, "remaining_turns")
+        validate_positive_integer(self.remaining_turns, "remaining_turns")
 
 
 @dataclass(frozen=True)
@@ -61,7 +52,7 @@ class Drone:
 
     def __post_init__(self) -> None:
         """Validate the drone identifier and state."""
-        _validate_positive_integer(self.id, "id")
+        validate_positive_integer(self.id, "id")
         if not isinstance(self.state, (AtZone, InTransit, Finished)):
             raise ValueError("state must be a valid drone state")
 

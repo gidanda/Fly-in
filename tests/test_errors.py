@@ -5,7 +5,6 @@ from pathlib import Path
 from fly_in.errors import (
     DroneStateError,
     FlyInError,
-    MapDefinitionError,
     MapParseError,
     PlanningError,
     TurnValidationError,
@@ -34,17 +33,6 @@ def test_turn_validation_error_is_a_fly_in_error() -> None:
 def test_planning_error_is_a_fly_in_error() -> None:
     """Planning failures can be caught through the common base class."""
     assert isinstance(PlanningError("No progress"), FlyInError)
-
-
-def test_map_errors_are_sibling_classes() -> None:
-    """Parsing and definition failures share only the common base."""
-    parse_error = MapParseError(Path("map.txt"), "Invalid syntax")
-    definition_error = MapDefinitionError("Invalid structure")
-
-    assert isinstance(parse_error, FlyInError)
-    assert isinstance(definition_error, FlyInError)
-    assert not isinstance(parse_error, MapDefinitionError)
-    assert not isinstance(definition_error, MapParseError)
 
 
 def test_map_parse_error_displays_line_context() -> None:

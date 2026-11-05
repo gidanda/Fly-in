@@ -1,5 +1,7 @@
 """Greedy movement planning for one Fly-in simulation turn."""
 
+from typing import cast
+
 from fly_in.drone import AtZone, Drone, InTransit
 from fly_in.errors import PlanningError, TurnValidationError
 from fly_in.pathfinder import Pathfinder
@@ -155,12 +157,9 @@ class TurnPlanner:
 
         for zone_id, arrival_count in arrival_counts.items():
             zone = next_state.drone_map.get_zone(zone_id)
-            max_drones = zone.max_drones
-            if zone_id in (
-                next_state.drone_map.start_zone_id,
-                next_state.drone_map.end_zone_id,
-            ) or max_drones is None:
+            if zone.has_unlimited_capacity():
                 continue
+            max_drones = cast(int, zone.max_drones)
 
             occupancy = next_state.get_zone_occupancy(zone_id)
             if occupancy + arrival_count > max_drones:

@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by hirokigoda.*
+*This project has been created as part of the 42 curriculum by hgoda.*
 
 # Fly-in
 
@@ -176,8 +176,8 @@ number, source text, and a specific cause. Cross-object map constraints are
 validated by `MapParser` before `DroneMap` builds its indexes. `Scenario` and
 `DroneMap` trust these caller-validated values instead of repeating the input
 checks. Code constructing these objects directly must satisfy the same
-preconditions. `DroneMap` still rejects duplicate internal zone or connection
-IDs.
+preconditions, including unique zone and connection IDs. The parser assigns
+these IDs sequentially, so uniqueness follows from its construction process.
 
 ### 2. Reverse Dijkstra analysis
 

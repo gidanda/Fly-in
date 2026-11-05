@@ -3,14 +3,7 @@
 from dataclasses import dataclass
 
 
-def _validate_positive_integer(value: int, field_name: str) -> None:
-    """Require an integer identifier greater than zero."""
-    if (
-        not isinstance(value, int)
-        or isinstance(value, bool)
-        or value < 1
-    ):
-        raise ValueError(f"{field_name} must be a positive integer")
+from fly_in.validation import validate_positive_integer
 
 
 @dataclass(frozen=True)
@@ -22,8 +15,8 @@ class MoveIntent:
 
     def __post_init__(self) -> None:
         """Validate the drone and destination identifiers."""
-        _validate_positive_integer(self.drone_id, "drone_id")
-        _validate_positive_integer(
+        validate_positive_integer(self.drone_id, "drone_id")
+        validate_positive_integer(
             self.destination_zone_id,
             "destination_zone_id",
         )

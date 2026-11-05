@@ -225,7 +225,7 @@ def test_preview_empty_plan_keeps_zone_drones_in_place() -> None:
 
 
 def test_preview_treats_start_zone_capacity_as_unlimited() -> None:
-    """Start capacity metadata cannot invalidate the initial occupancy."""
+    """Normalized start capacity permits all drones to wait there."""
     zones = [
         Zone(
             1,
@@ -234,7 +234,7 @@ def test_preview_treats_start_zone_capacity_as_unlimited() -> None:
             0,
             ZoneRole.START,
             ZoneType.NORMAL,
-            1,
+            None,
             None,
         ),
         Zone(
@@ -244,7 +244,7 @@ def test_preview_treats_start_zone_capacity_as_unlimited() -> None:
             0,
             ZoneRole.END,
             ZoneType.NORMAL,
-            1,
+            None,
             None,
         ),
     ]

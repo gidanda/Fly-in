@@ -3,7 +3,6 @@
 from collections.abc import Iterable
 
 from fly_in.connection import Connection
-from fly_in.errors import MapDefinitionError
 from fly_in.zone import Zone, ZoneRole
 
 
@@ -97,17 +96,11 @@ class DroneMap:
 
     def _register_zone(self, zone: Zone) -> None:
         """Add one zone to the internal indexes."""
-        if zone.id in self._zones:
-            raise MapDefinitionError(f"Duplicate zone ID: {zone.id}")
         self._zones[zone.id] = zone
         self._connection_ids_by_zone[zone.id] = []
 
     def _register_connection(self, connection: Connection) -> None:
         """Add one connection to the internal indexes."""
-        if connection.id in self._connections:
-            raise MapDefinitionError(
-                f"Duplicate connection ID: {connection.id}"
-            )
         pair = frozenset((connection.zone_a_id, connection.zone_b_id))
         self._connections[connection.id] = connection
         self._connection_ids_by_pair[pair] = connection.id

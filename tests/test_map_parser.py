@@ -38,7 +38,7 @@ def test_parser_builds_expected_scenario(tmp_path: Path) -> None:
         "hub: middle 1 -2 [zone=restricted color=light-green "
         "max_drones=2]\n"
         "connection: start-middle [max_link_capacity=3]\n"
-        "end_hub: goal 2 0\n"
+        "end_hub: goal 2 0 [max_drones=1]\n"
         "connection: middle-goal\n",
     )
 
@@ -49,6 +49,8 @@ def test_parser_builds_expected_scenario(tmp_path: Path) -> None:
     assert scenario.drone_count == 3
     assert drone_map.start_zone_id == 1
     assert drone_map.end_zone_id == 3
+    assert drone_map.get_zone(1).max_drones is None
+    assert drone_map.get_zone(3).max_drones is None
     assert middle.name == "middle"
     assert middle.role is ZoneRole.REGULAR
     assert middle.zone_type is ZoneType.RESTRICTED

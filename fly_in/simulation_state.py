@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import cast
 
 from fly_in.drone import AtZone, Drone, Finished, InTransit
 from fly_in.drone_map import DroneMap
@@ -256,13 +257,11 @@ class SimulationState:
 
         for zone_id, drone_count in occupancy.items():
             zone = self._drone_map.get_zone(zone_id)
-            if zone_id in (
-                self._drone_map.start_zone_id,
-                self._drone_map.end_zone_id,
-            ) or zone.max_drones is None:
+            if zone.has_unlimited_capacity():
                 continue
-            if drone_count > zone.max_drones:
+            max_drones = cast(int, zone.max_drones)
+            if drone_count > max_drones:
                 raise TurnValidationError(
                     f"Zone {zone_id} capacity exceeded: "
-                    f"{drone_count} > {zone.max_drones}"
+                    f"{drone_count} > {max_drones}"
                 )
