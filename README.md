@@ -52,6 +52,32 @@ The equivalent direct command is:
 .venv/bin/python -m fly_in maps/easy/01_linear_path.txt
 ```
 
+### Graphical viewer
+
+Display the recorded simulation in a separate Tk window:
+
+```sh
+make gui MAP=maps/easy/01_linear_path.txt
+```
+
+The equivalent direct command uses `--gui`:
+
+```sh
+.venv/bin/python -m fly_in maps/easy/01_linear_path.txt --gui
+```
+
+The simulation first prints its usual terminal output and records the states.
+Click **Next turn** to advance through the recorded history. The button is
+disabled at the last state. Resizing the window fits the map to the canvas.
+Zones use their specified colors (white for missing or unrecognized colors),
+start/end zones have double outlines, and small diamonds represent drones.
+Labels show drone count/capacity; large groups display at most five diamonds.
+In-transit drones appear at connection midpoints and delivered drones at the
+end zone. Unlimited zone capacity is displayed as `∞`.
+
+This option requires a Python installation with working tkinter and Tcl/Tk,
+plus a graphical desktop. Terminal-only execution does not import tkinter.
+
 ### Debugging
 
 ```sh

@@ -1,10 +1,12 @@
 """Tests for the Fly-in command-line entry point."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from fly_in.main import main
+from fly_in.errors import VisualizationError
 
 
 def write_map(tmp_path: Path, content: str) -> Path:
@@ -83,3 +85,35 @@ def test_main_uses_argparse_for_missing_arguments(
     assert error.value.code == 2
     assert captured.out == ""
     assert "usage: python -m fly_in" in captured.err
+
+
+def test_main_opens_viewer_with_completed_history(tmp_path: Path) -> None:
+    """The GUI option replays the same history produced by the runner."""
+    map_path = write_map(
+        tmp_path,
+        "nb_drones: 1\nstart_hub: start 0 0\n"
+        "end_hub: goal 1 0\nconnection: start-goal\n",
+    )
+    with patch("fly_in.simulation_viewer.SimulationViewer") as viewer:
+        assert main([str(map_path), "--gui"]) == 0
+        history = viewer.call_args.args[0]
+        assert [state.current_turn for state in history] == [0, 1]
+        assert history[-1].all_drones_finished()
+        viewer.return_value.run.assert_called_once_with()
+
+
+def test_main_reports_viewer_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """GUI startup errors use the existing application error handler."""
+    map_path = write_map(
+        tmp_path,
+        "nb_drones: 1\nstart_hub: start 0 0\n"
+        "end_hub: goal 1 0\nconnection: start-goal\n",
+    )
+    with patch(
+        "fly_in.simulation_viewer.SimulationViewer",
+        side_effect=VisualizationError("Cannot open viewer"),
+    ):
+        assert main([str(map_path), "--gui"]) == 1
+    assert "Error: Cannot open viewer" in capsys.readouterr().err

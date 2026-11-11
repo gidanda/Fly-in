@@ -27,6 +27,11 @@ def _parse_arguments(
         type=Path,
         help="path to the map file to simulate",
     )
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="Open the graphical simulation viewer",
+    )
     return parser.parse_args(argv)
 
 
@@ -41,7 +46,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         planner = TurnPlanner(pathfinder)
         formatter = TurnFormatter(use_color=sys.stdout.isatty())
         runner = SimulationRunner(planner, formatter)
-        runner.run(state)
+        states = runner.run(state)
+        if arguments.gui:
+            # Keep terminal-only runs independent of the optional Tk runtime.
+            try:
+                from fly_in.simulation_viewer import SimulationViewer
+            except ImportError as error:
+                from fly_in.errors import VisualizationError
+
+                raise VisualizationError(
+                    "GUI requires a Python installation with tkinter/Tk"
+                ) from error
+            SimulationViewer(states).run()
     except (FlyInError, OSError, UnicodeError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1

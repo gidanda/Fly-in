@@ -28,6 +28,14 @@ class DroneMap:
         self.start_zone_id = self._find_role(ZoneRole.START)
         self.end_zone_id = self._find_role(ZoneRole.END)
 
+    def get_zones(self) -> list[Zone]:
+        """Return all zone definitions without exposing the internal index."""
+        return list(self._zones.values())
+
+    def get_connections(self) -> list[Connection]:
+        """Return all connections without exposing the internal index."""
+        return list(self._connections.values())
+
     def has_zone(self, zone_id: int) -> bool:
         """Return whether a zone ID exists in this map."""
         return zone_id in self._zones

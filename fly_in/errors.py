@@ -19,6 +19,10 @@ class PlanningError(FlyInError):
     """Report that the planner cannot produce a progressing turn."""
 
 
+class VisualizationError(FlyInError):
+    """Report that the graphical viewer cannot display the simulation."""
+
+
 class MapParseError(FlyInError):
     """Report invalid content found while parsing a map file."""
 

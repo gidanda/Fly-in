@@ -2,7 +2,7 @@ SYSTEM_PYTHON ?= python3
 VENV := .venv
 VENV_PYTHON := $(VENV)/bin/python
 
-.PHONY: install run debug clean lint check-map
+.PHONY: install run gui debug clean lint check-map
 
 install:
 	$(SYSTEM_PYTHON) -m venv $(VENV)
@@ -10,12 +10,15 @@ install:
 
 check-map:
 	@if [ -z "$(MAP)" ]; then \
-		echo "Usage: make run MAP=<map_file>" >&2; \
+		echo "Usage: make <run|gui|debug> MAP=<map_file>" >&2; \
 		exit 2; \
 	fi
 
 run: check-map
 	@$(VENV_PYTHON) -m fly_in "$(MAP)"
+
+gui: check-map
+	@$(VENV_PYTHON) -m fly_in "$(MAP)" --gui
 
 debug: check-map
 	$(VENV_PYTHON) -m pdb -m fly_in "$(MAP)"
