@@ -93,23 +93,6 @@ def test_formats_restricted_departure_with_zone_names() -> None:
     assert result == "D1-middle-restricted_area"
 
 
-def test_colors_connection_movements_cyan_when_enabled() -> None:
-    """An in-transit movement uses the shared connection color."""
-    state = SimulationState(Scenario(make_map(), 1))
-    state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 2),))
-    ).next_state
-    projection = state.preview_turn(
-        TurnPlan((MoveIntent(1, 3),))
-    )
-
-    result = TurnFormatter(use_color=True).format_turn(state, projection)
-
-    assert result == (
-        "\033[38;2;0;255;255mD1-middle-restricted_area\033[0m"
-    )
-
-
 def test_formats_restricted_arrival_with_zone_name() -> None:
     """The second restricted turn displays the destination zone."""
     state = SimulationState(Scenario(make_map(), 1))
@@ -126,14 +109,14 @@ def test_formats_restricted_arrival_with_zone_name() -> None:
     assert result == "D1-restricted_area"
 
 
-def test_colors_zone_arrivals_with_the_zone_color_when_enabled() -> None:
-    """A zone arrival uses the color stored in the map definition."""
+def test_zone_colors_do_not_change_terminal_output() -> None:
+    """Color metadata is reserved for the GUI, not movement logs."""
     state = SimulationState(Scenario(make_map(), 1))
     projection = state.preview_turn(TurnPlan((MoveIntent(1, 2),)))
 
-    result = TurnFormatter(use_color=True).format_turn(state, projection)
+    result = TurnFormatter().format_turn(state, projection)
 
-    assert result == "\033[38;2;0;200;0mD1-middle\033[0m"
+    assert result == "D1-middle"
 
 
 def test_formats_goal_arrival_with_goal_zone_name() -> None:

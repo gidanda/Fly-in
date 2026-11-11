@@ -17,7 +17,7 @@ The simulation enforces:
 - inaccessible `blocked` zones;
 - simultaneous departures and arrivals;
 - deterministic, per-turn movement output; and
-- colored terminal feedback for zone arrivals and connection travel.
+- a graphical viewer for zone colors, drone positions, and capacity usage.
 
 The implementation uses only the Python standard library for runtime logic.
 It does not use graph libraries such as NetworkX.
@@ -166,28 +166,17 @@ D2-goal
 ```
 
 A zone arrival uses `D<ID>-<zone-name>`. The first turn of travel into a
-`restricted` zone uses `D<ID>-C<connection-id>` because the drone finishes the
-turn on that connection.
+`restricted` zone uses `D<ID>-<source-zone>-<destination-zone>` because the
+drone finishes the turn on that connection.
 
-When standard output is an interactive terminal:
-
-- a zone arrival uses the destination zone's `color` metadata;
-- connection travel is cyan;
-- an unknown but specified color name uses visible magenta as a fallback;
-- a zone without a color remains in the terminal's default color; and
-- `black` is displayed as gray so that it remains readable on dark terminals.
-
-ANSI color codes are automatically disabled when output is redirected to a
-file, sent through a pipe, or captured by a test. The underlying movement
-format therefore remains suitable for automated evaluation:
+Terminal output is always plain text, including interactive runs. Zone colors
+are displayed only in the GUI. Logs can be redirected for automated evaluation:
 
 ```sh
 make run MAP=maps/easy/01_linear_path.txt > result.txt
 ```
 
-Color makes the destination of each arrival immediately recognizable, while
-the shared cyan color distinguishes drones that are still traveling from
-drones that reached a zone.
+Use `make gui MAP=<map_file>` for a visual representation of the simulation.
 
 ## Algorithm and implementation strategy
 
@@ -261,7 +250,7 @@ responsible for choosing an efficient plan.
 | `SimulationState` | Validate and project one simultaneous turn |
 | `TurnPlanner` | Build a safe greedy movement plan |
 | `TurnProjection` | Store the validated result of a turn preview |
-| `TurnFormatter` | Produce plain or ANSI-colored movement text |
+| `TurnFormatter` | Produce plain-text movement logs |
 | `SimulationRunner` | Repeat planning, projection, formatting, and output |
 
 ## Performance

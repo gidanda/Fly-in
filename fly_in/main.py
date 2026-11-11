@@ -44,7 +44,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         state = SimulationState(scenario)
         pathfinder = Pathfinder(scenario.drone_map)
         planner = TurnPlanner(pathfinder)
-        formatter = TurnFormatter(use_color=sys.stdout.isatty())
+        formatter = TurnFormatter()
         runner = SimulationRunner(planner, formatter)
         states = runner.run(state)
         if arguments.gui:
