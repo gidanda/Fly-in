@@ -59,7 +59,11 @@ class TurnFormatter:
                     drone_map,
                 )
             if isinstance(after.state, InTransit):
-                movement = f"D{after.id}-C{after.state.connection_id}"
+                source = drone_map.get_zone(before.state.zone_id)
+                destination = drone_map.get_zone(
+                    after.state.destination_zone_id
+                )
+                movement = f"D{after.id}-{source.name}-{destination.name}"
                 return self._apply_color(movement, "cyan")
 
         if isinstance(before.state, InTransit):

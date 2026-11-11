@@ -62,7 +62,8 @@ def test_runs_until_all_drones_finish(
     )
     initial_state = SimulationState(Scenario(drone_map, 2))
 
-    final_state = make_runner(drone_map).run(initial_state)
+    states = make_runner(drone_map).run(initial_state)
+    final_state = states[-1]
 
     assert capsys.readouterr().out == (
         "D1-middle\n"
@@ -72,6 +73,11 @@ def test_runs_until_all_drones_finish(
     assert final_state.all_drones_finished()
     assert final_state.current_turn == 3
     assert initial_state.current_turn == 0
+    assert states[0] is initial_state
+    assert [state.current_turn for state in states] == [0, 1, 2, 3]
+    assert len({id(state) for state in states}) == len(states)
+    assert all(state.drone_map is drone_map for state in states)
+    assert not states[0].all_drones_finished()
 
 
 def test_prints_both_restricted_movement_turns(
@@ -95,15 +101,18 @@ def test_prints_both_restricted_movement_turns(
     )
     initial_state = SimulationState(Scenario(drone_map, 1))
 
-    final_state = make_runner(drone_map).run(initial_state)
+    states = make_runner(drone_map).run(initial_state)
+    final_state = states[-1]
 
     assert capsys.readouterr().out == (
-        "D1-C1\n"
+        "D1-start-restricted_area\n"
         "D1-restricted_area\n"
         "D1-goal\n"
     )
     assert final_state.all_drones_finished()
     assert final_state.current_turn == 3
+    assert states[0] is initial_state
+    assert [state.current_turn for state in states] == [0, 1, 2, 3]
 
 
 def test_completed_initial_state_returns_without_output(
@@ -122,10 +131,11 @@ def test_completed_initial_state_returns_without_output(
         TurnPlan((MoveIntent(1, 2),))
     ).next_state
 
-    final_state = make_runner(drone_map).run(completed_state)
+    states = make_runner(drone_map).run(completed_state)
 
     assert capsys.readouterr().out == ""
-    assert final_state is completed_state
+    assert len(states) == 1
+    assert states[0] is completed_state
 
 
 def test_propagates_planning_errors() -> None:

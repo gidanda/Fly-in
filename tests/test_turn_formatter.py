@@ -78,8 +78,8 @@ def test_formats_normal_moves_in_drone_id_order() -> None:
     assert result == "D1-middle D2-middle"
 
 
-def test_formats_restricted_departure_with_connection_id() -> None:
-    """The first restricted turn displays the occupied connection."""
+def test_formats_restricted_departure_with_zone_names() -> None:
+    """The first restricted turn displays source and destination names."""
     state = SimulationState(Scenario(make_map(), 1))
     state = state.preview_turn(
         TurnPlan((MoveIntent(1, 2),))
@@ -90,7 +90,7 @@ def test_formats_restricted_departure_with_connection_id() -> None:
 
     result = TurnFormatter().format_turn(state, projection)
 
-    assert result == "D1-C2"
+    assert result == "D1-middle-restricted_area"
 
 
 def test_colors_connection_movements_cyan_when_enabled() -> None:
@@ -105,7 +105,9 @@ def test_colors_connection_movements_cyan_when_enabled() -> None:
 
     result = TurnFormatter(use_color=True).format_turn(state, projection)
 
-    assert result == "\033[38;2;0;255;255mD1-C2\033[0m"
+    assert result == (
+        "\033[38;2;0;255;255mD1-middle-restricted_area\033[0m"
+    )
 
 
 def test_formats_restricted_arrival_with_zone_name() -> None:
