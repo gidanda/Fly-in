@@ -33,10 +33,20 @@ class SimulationViewer:
         self._canvas.pack(fill=tk.BOTH, expand=True)
         self._turn_label = ttk.Label(self._window)
         self._turn_label.pack(pady=6)
-        self._next_button = ttk.Button(
-            self._window, text="Next turn", command=self._next_turn,
+        controls = ttk.Frame(self._window)
+        controls.pack(pady=(0, 10))
+        self._reset_button = ttk.Button(
+            controls, text="Reset", command=self._reset,
         )
-        self._next_button.pack(pady=(0, 10))
+        self._reset_button.pack(side=tk.LEFT, padx=4)
+        self._back_button = ttk.Button(
+            controls, text="Previous turn", command=self._previous_turn,
+        )
+        self._back_button.pack(side=tk.LEFT, padx=4)
+        self._next_button = ttk.Button(
+            controls, text="Next turn", command=self._next_turn,
+        )
+        self._next_button.pack(side=tk.LEFT, padx=4)
         self._canvas.bind("<Configure>", self._on_resize)
         self._draw_state()
 
@@ -49,6 +59,17 @@ class SimulationViewer:
         if self._current_index < len(self._states) - 1:
             self._current_index += 1
             self._draw_state()
+
+    def _previous_turn(self) -> None:
+        """Select the preceding snapshot without going before the first."""
+        if self._current_index > 0:
+            self._current_index -= 1
+            self._draw_state()
+
+    def _reset(self) -> None:
+        """Return to the first recorded snapshot without recalculation."""
+        self._current_index = 0
+        self._draw_state()
 
     def _on_resize(self, event: tk.Event[tk.Misc]) -> None:
         """Fit the current map again after the canvas changes size."""
@@ -94,6 +115,9 @@ class SimulationViewer:
         self._draw_zones(state, positions)
         self._draw_drones(state, positions)
         self._turn_label.configure(text=f"Turn: {state.current_turn}")
+        backward_state = tk.DISABLED if self._current_index == 0 else tk.NORMAL
+        self._reset_button.configure(state=backward_state)
+        self._back_button.configure(state=backward_state)
         self._next_button.configure(
             state=(
                 tk.DISABLED

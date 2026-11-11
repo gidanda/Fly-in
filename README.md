@@ -67,8 +67,11 @@ The equivalent direct command uses `--gui`:
 ```
 
 The simulation first prints its usual terminal output and records the states.
-Click **Next turn** to advance through the recorded history. The button is
-disabled at the last state. Resizing the window fits the map to the canvas.
+The controls are **Reset**, **Previous turn**, and **Next turn**, left to right.
+They select the first, previous, or next recorded state without recalculating
+the simulation. Reset and Previous turn are disabled at the first state;
+Next turn is disabled at the last state and re-enabled when going back.
+Resizing the window fits the map to the canvas.
 Zones use their specified colors (white for missing or unrecognized colors),
 start/end zones have double outlines, and small diamonds represent drones.
 Labels show drone count/capacity; large groups display at most five diamonds.

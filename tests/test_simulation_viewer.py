@@ -48,7 +48,11 @@ def widgets() -> Iterator[MagicMock]:
         patch("fly_in.simulation_viewer.tk.Tk"),
         patch("fly_in.simulation_viewer.tk.Canvas", return_value=canvas),
         patch("fly_in.simulation_viewer.ttk.Label"),
-        patch("fly_in.simulation_viewer.ttk.Button"),
+        patch("fly_in.simulation_viewer.ttk.Frame"),
+        patch(
+            "fly_in.simulation_viewer.ttk.Button",
+            side_effect=lambda *args, **kwargs: MagicMock(),
+        ),
     ):
         yield canvas
 
@@ -94,6 +98,37 @@ def test_replays_history_without_changing_snapshots(
     assert not history[0].all_drones_finished()
 
 
+def test_back_and_reset_update_controls(widgets: MagicMock) -> None:
+    """Playback can go back or reset without changing recorded states."""
+    history = make_history()
+    viewer = SimulationViewer(history)
+    reset = cast(MagicMock, viewer._reset_button)
+    back = cast(MagicMock, viewer._back_button)
+    next_button = cast(MagicMock, viewer._next_button)
+    reset.configure.assert_called_with(state=tk.DISABLED)
+    back.configure.assert_called_with(state=tk.DISABLED)
+    viewer._previous_turn()
+    assert viewer._current_index == 0
+    viewer._next_turn()
+    viewer._next_turn()
+    next_button.configure.assert_called_with(state=tk.DISABLED)
+    viewer._previous_turn()
+    assert viewer._current_index == 1
+    next_button.configure.assert_called_with(state=tk.NORMAL)
+    reset.configure.assert_called_with(state=tk.NORMAL)
+    back.configure.assert_called_with(state=tk.NORMAL)
+    viewer._reset()
+    assert viewer._current_index == 0
+    reset.configure.assert_called_with(state=tk.DISABLED)
+    back.configure.assert_called_with(state=tk.DISABLED)
+    next_button.configure.assert_called_with(state=tk.NORMAL)
+    viewer._next_turn()
+    viewer._previous_turn()
+    assert viewer._current_index == 0
+    back.configure.assert_called_with(state=tk.DISABLED)
+    assert [state.current_turn for state in history] == [0, 1, 2]
+
+
 def test_color_fallback_and_marker_limit(widgets: MagicMock) -> None:
     """Unknown colors are white and large groups use five diamonds."""
     viewer = SimulationViewer(make_history())
@@ -137,5 +172,11 @@ def test_handles_horizontal_and_coincident_coordinates(
         ])
         assert all(y == 350 for _, y in viewer._get_positions().values())
         cast(MagicMock, viewer._next_button).configure.assert_called_with(
+            state=tk.DISABLED,
+        )
+        cast(MagicMock, viewer._back_button).configure.assert_called_with(
+            state=tk.DISABLED,
+        )
+        cast(MagicMock, viewer._reset_button).configure.assert_called_with(
             state=tk.DISABLED,
         )
