@@ -377,20 +377,57 @@ def test_preview_rejects_move_for_in_transit_drone() -> None:
 
 
 def test_preview_rejects_connection_capacity_excess() -> None:
-    """Current and newly entering users share the connection capacity."""
+    """Continuing transit and newly departing drones share capacity."""
     simulation = SimulationState(make_preview_scenario())
     replace_drone_for_test(
         simulation,
-        simulation.drones[1].start_move(1, 2, 1),
+        simulation.drones[1].start_move(1, 2, 2),
     )
     plan = TurnPlan((MoveIntent(2, 2), MoveIntent(3, 2)))
 
     with pytest.raises(TurnValidationError, match="Connection 1 capacity"):
         simulation.preview_turn(plan)
 
-    assert simulation.drones[1].state == InTransit(1, 2, 1)
+    assert simulation.drones[1].state == InTransit(1, 2, 2)
     assert simulation.drones[2].state == AtZone(1)
     assert simulation.drones[3].state == AtZone(1)
+
+
+def test_preview_reuses_restricted_connection_on_arrival() -> None:
+    """An arriving drone frees a capacity-one link for a new departure."""
+    original_map = make_preview_scenario().drone_map
+    drone_map = DroneMap(
+        original_map.get_zones(),
+        [
+            Connection(link.id, link.zone_a_id, link.zone_b_id, 1)
+            for link in original_map.get_connections()
+        ],
+    )
+    initial = SimulationState(Scenario(drone_map, 2))
+    simulation = initial.preview_turn(
+        TurnPlan((MoveIntent(1, 3),))
+    ).next_state
+
+    projection = simulation.preview_turn(TurnPlan((MoveIntent(2, 3),)))
+
+    assert projection.connection_users == {2: frozenset({2})}
+    assert projection.next_state.drones[1] == Drone(1, AtZone(3))
+    assert projection.next_state.drones[2] == Drone(2, InTransit(2, 3, 1))
+    assert simulation.drones[1].state == InTransit(2, 3, 1)
+    assert simulation.drones[2].state == AtZone(1)
+
+    arrival = projection.next_state.preview_turn(TurnPlan(()))
+    assert arrival.connection_users == {}
+    assert arrival.next_state.drones[2] == Drone(2, AtZone(3))
+
+
+def test_preview_counts_new_one_turn_moves_against_link_capacity() -> None:
+    """New users count even when they finish crossing within one turn."""
+    simulation = SimulationState(make_preview_scenario())
+    plan = TurnPlan(tuple(MoveIntent(drone_id, 2) for drone_id in (1, 2, 3)))
+
+    with pytest.raises(TurnValidationError, match="Connection 1 capacity"):
+        simulation.preview_turn(plan)
 
 
 def test_preview_rejects_projected_zone_capacity_excess() -> None:

@@ -182,6 +182,8 @@ class SimulationState:
             state = drone.state
             if not isinstance(state, InTransit):
                 continue
+            if state.remaining_turns == 1:
+                continue
             mutable_users.setdefault(state.connection_id, set()).add(
                 drone.id
             )
