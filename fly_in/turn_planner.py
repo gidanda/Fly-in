@@ -37,7 +37,8 @@ class TurnPlanner:
             for destination_id in destination_ids:
                 intent = MoveIntent(drone.id, destination_id)
                 candidate_plan = TurnPlan(
-                    tuple(accepted_moves + [intent])
+                    execution_turn=state.current_turn + 1,
+                    moves=tuple(accepted_moves + [intent]),
                 )
 
                 try:
@@ -53,7 +54,10 @@ class TurnPlanner:
                 accepted_moves.append(intent)
                 break
 
-        plan = TurnPlan(tuple(accepted_moves))
+        plan = TurnPlan(
+            execution_turn=state.current_turn + 1,
+            moves=tuple(accepted_moves),
+        )
         if (
             accepted_moves
             or state.all_drones_finished()

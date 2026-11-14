@@ -128,7 +128,7 @@ def test_completed_initial_state_returns_without_output(
     )
     state = SimulationState(Scenario(drone_map, 1))
     completed_state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 2),))
+        TurnPlan(1, (MoveIntent(1, 2),))
     ).next_state
 
     states = make_runner(drone_map).run(completed_state)

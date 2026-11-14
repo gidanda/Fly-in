@@ -46,14 +46,22 @@ def test_turn_plan_stores_an_immutable_move_tuple() -> None:
     """A turn plan keeps its supplied movements in order."""
     moves = (MoveIntent(1, 2), MoveIntent(3, 4))
 
-    plan = TurnPlan(moves)
+    plan = TurnPlan(1, moves)
 
     assert plan.moves == moves
+    assert plan.execution_turn == 1
+
+
+@pytest.mark.parametrize("value", [0, -1, True, 1.5, "1", None])
+def test_turn_plan_rejects_invalid_execution_turn(value: object) -> None:
+    """Execution turns must be positive integers, not booleans or strings."""
+    with pytest.raises(ValueError, match="execution_turn"):
+        TurnPlan(value, ())  # type: ignore[arg-type]
 
 
 def test_turn_plan_allows_no_new_movements() -> None:
     """An empty plan represents a turn with no newly started movement."""
-    assert TurnPlan(()).moves == ()
+    assert TurnPlan(1, ()).moves == ()
 
 
 def test_turn_plan_rejects_duplicate_drone_ids() -> None:
@@ -61,7 +69,7 @@ def test_turn_plan_rejects_duplicate_drone_ids() -> None:
     moves = (MoveIntent(1, 2), MoveIntent(1, 3))
 
     with pytest.raises(ValueError, match="duplicate drone IDs"):
-        TurnPlan(moves)
+        TurnPlan(1, moves)
 
 
 def test_turn_plan_rejects_mutable_move_collection() -> None:
@@ -69,18 +77,20 @@ def test_turn_plan_rejects_mutable_move_collection() -> None:
     moves = [MoveIntent(1, 2)]
 
     with pytest.raises(ValueError, match="must be a tuple"):
-        TurnPlan(moves)  # type: ignore[arg-type]
+        TurnPlan(1, moves)  # type: ignore[arg-type]
 
 
 def test_turn_plan_rejects_non_move_intent_elements() -> None:
     """Every turn plan element must be a MoveIntent."""
     with pytest.raises(ValueError, match="only MoveIntent"):
-        TurnPlan((object(),))  # type: ignore[arg-type]
+        TurnPlan(1, (object(),))  # type: ignore[arg-type]
 
 
 def test_turn_plan_is_immutable() -> None:
     """A turn plan cannot replace its move collection after creation."""
-    plan = TurnPlan((MoveIntent(1, 2),))
+    plan = TurnPlan(1, (MoveIntent(1, 2),))
 
     with pytest.raises(FrozenInstanceError):
         setattr(plan, "moves", ())
+    with pytest.raises(FrozenInstanceError):
+        setattr(plan, "execution_turn", 2)

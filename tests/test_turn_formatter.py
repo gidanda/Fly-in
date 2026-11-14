@@ -70,7 +70,7 @@ def test_formats_normal_moves_in_drone_id_order() -> None:
     """Normal arrivals use zone names and waiting drones are omitted."""
     state = SimulationState(Scenario(make_map(), 3))
     projection = state.preview_turn(
-        TurnPlan((MoveIntent(2, 2), MoveIntent(1, 2)))
+        TurnPlan(1, (MoveIntent(2, 2), MoveIntent(1, 2)))
     )
 
     result = TurnFormatter().format_turn(state, projection)
@@ -82,10 +82,10 @@ def test_formats_restricted_departure_with_zone_names() -> None:
     """The first restricted turn displays source and destination names."""
     state = SimulationState(Scenario(make_map(), 1))
     state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 2),))
+        TurnPlan(1, (MoveIntent(1, 2),))
     ).next_state
     projection = state.preview_turn(
-        TurnPlan((MoveIntent(1, 3),))
+        TurnPlan(2, (MoveIntent(1, 3),))
     )
 
     result = TurnFormatter().format_turn(state, projection)
@@ -97,12 +97,12 @@ def test_formats_restricted_arrival_with_zone_name() -> None:
     """The second restricted turn displays the destination zone."""
     state = SimulationState(Scenario(make_map(), 1))
     state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 2),))
+        TurnPlan(1, (MoveIntent(1, 2),))
     ).next_state
     state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 3),))
+        TurnPlan(2, (MoveIntent(1, 3),))
     ).next_state
-    projection = state.preview_turn(TurnPlan(()))
+    projection = state.preview_turn(TurnPlan(3, ()))
 
     result = TurnFormatter().format_turn(state, projection)
 
@@ -112,7 +112,7 @@ def test_formats_restricted_arrival_with_zone_name() -> None:
 def test_zone_colors_do_not_change_terminal_output() -> None:
     """Color metadata is reserved for the GUI, not movement logs."""
     state = SimulationState(Scenario(make_map(), 1))
-    projection = state.preview_turn(TurnPlan((MoveIntent(1, 2),)))
+    projection = state.preview_turn(TurnPlan(1, (MoveIntent(1, 2),)))
 
     result = TurnFormatter().format_turn(state, projection)
 
@@ -123,14 +123,14 @@ def test_formats_goal_arrival_with_goal_zone_name() -> None:
     """A Finished state is displayed as an arrival at the goal zone."""
     state = SimulationState(Scenario(make_map(), 1))
     state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 2),))
+        TurnPlan(1, (MoveIntent(1, 2),))
     ).next_state
     state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 3),))
+        TurnPlan(2, (MoveIntent(1, 3),))
     ).next_state
-    state = state.preview_turn(TurnPlan(())).next_state
+    state = state.preview_turn(TurnPlan(3, ())).next_state
     projection = state.preview_turn(
-        TurnPlan((MoveIntent(1, 4),))
+        TurnPlan(4, (MoveIntent(1, 4),))
     )
 
     result = TurnFormatter().format_turn(state, projection)
@@ -141,7 +141,7 @@ def test_formats_goal_arrival_with_goal_zone_name() -> None:
 def test_returns_empty_string_when_no_drone_moves() -> None:
     """A turn containing only waiting drones has no movement text."""
     state = SimulationState(Scenario(make_map(), 1))
-    projection = state.preview_turn(TurnPlan(()))
+    projection = state.preview_turn(TurnPlan(1, ()))
 
     result = TurnFormatter().format_turn(state, projection)
 
@@ -161,7 +161,7 @@ def test_rejects_an_unsupported_state_transition() -> None:
         {1: Drone(1, AtZone(2))},
         5,
     )
-    projection = TurnProjection(4, TurnPlan(()), next_state, {})
+    projection = TurnProjection(4, TurnPlan(5, ()), next_state, {})
 
     with pytest.raises(ValueError, match="Finished -> AtZone"):
         TurnFormatter().format_turn(source_state, projection)

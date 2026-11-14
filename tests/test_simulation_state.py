@@ -206,7 +206,7 @@ def test_preview_empty_plan_keeps_zone_drones_in_place() -> None:
     """An empty plan is valid and leaves zone-bound drones waiting."""
     simulation = SimulationState(make_preview_scenario())
 
-    projection = simulation.preview_turn(TurnPlan(()))
+    projection = simulation.preview_turn(TurnPlan(1, ()))
 
     assert projection.source_turn == 0
     assert projection.next_state.drones == {
@@ -222,6 +222,19 @@ def test_preview_empty_plan_keeps_zone_drones_in_place() -> None:
         drone.state == AtZone(1)
         for drone in simulation.drones.values()
     )
+
+
+@pytest.mark.parametrize("execution_turn", [1, 3])
+def test_preview_rejects_wrong_execution_turn(execution_turn: int) -> None:
+    """A plan for a past or later turn cannot run on the current state."""
+    initial = SimulationState(make_preview_scenario())
+    state = initial.preview_turn(TurnPlan(1, ())).next_state
+
+    with pytest.raises(TurnValidationError, match="execution_turn must be 2"):
+        state.preview_turn(TurnPlan(execution_turn, (MoveIntent(1, 2),)))
+
+    assert state.current_turn == 1
+    assert state.drones[1].state == AtZone(1)
 
 
 def test_preview_treats_start_zone_capacity_as_unlimited() -> None:
@@ -253,7 +266,7 @@ def test_preview_treats_start_zone_capacity_as_unlimited() -> None:
         drone_count=3,
     )
 
-    projection = SimulationState(scenario).preview_turn(TurnPlan(()))
+    projection = SimulationState(scenario).preview_turn(TurnPlan(1, ()))
 
     assert projection.next_state.drones == {
         1: Drone(1, AtZone(1)),
@@ -265,7 +278,7 @@ def test_preview_treats_start_zone_capacity_as_unlimited() -> None:
 def test_preview_projects_one_turn_move_without_mutating_drone() -> None:
     """A cost-one move arrives while the real drone stays unchanged."""
     simulation = SimulationState(make_preview_scenario())
-    plan = TurnPlan((MoveIntent(1, 2),))
+    plan = TurnPlan(1, (MoveIntent(1, 2),))
 
     projection = simulation.preview_turn(plan)
 
@@ -279,10 +292,10 @@ def test_next_state_can_preview_following_turn() -> None:
     initial_state = SimulationState(make_preview_scenario())
 
     first_projection = initial_state.preview_turn(
-        TurnPlan((MoveIntent(1, 2),))
+        TurnPlan(1, (MoveIntent(1, 2),))
     )
     second_projection = first_projection.next_state.preview_turn(
-        TurnPlan((MoveIntent(1, 4),))
+        TurnPlan(2, (MoveIntent(1, 4),))
     )
 
     assert initial_state.current_turn == 0
@@ -296,7 +309,7 @@ def test_next_state_can_preview_following_turn() -> None:
 def test_preview_projects_two_turn_move_onto_connection() -> None:
     """A new restricted move ends its first turn in transit."""
     simulation = SimulationState(make_preview_scenario())
-    plan = TurnPlan((MoveIntent(1, 3),))
+    plan = TurnPlan(1, (MoveIntent(1, 3),))
 
     projection = simulation.preview_turn(plan)
 
@@ -315,7 +328,7 @@ def test_preview_advances_existing_transit_and_records_usage() -> None:
         simulation.drones[1].start_move(2, 3, 2),
     )
 
-    projection = simulation.preview_turn(TurnPlan(()))
+    projection = simulation.preview_turn(TurnPlan(1, ()))
 
     assert projection.next_state.drones[1] == Drone(
         1,
@@ -336,7 +349,7 @@ def test_preview_arrives_at_goal_as_finished() -> None:
     replace_drone_for_test(simulation, at_middle)
 
     projection = simulation.preview_turn(
-        TurnPlan((MoveIntent(1, 4),))
+        TurnPlan(1, (MoveIntent(1, 4),))
     )
 
     assert projection.next_state.drones[1] == Drone(1, Finished())
@@ -346,11 +359,11 @@ def test_preview_arrives_at_goal_as_finished() -> None:
 @pytest.mark.parametrize(
     ("plan", "message"),
     [
-        (TurnPlan((MoveIntent(99, 2),)), "Unknown drone ID"),
-        (TurnPlan((MoveIntent(1, 99),)), "Unknown destination zone"),
-        (TurnPlan((MoveIntent(1, 1),)), "already at zone"),
-        (TurnPlan((MoveIntent(1, 6),)), "not connected"),
-        (TurnPlan((MoveIntent(1, 5),)), "blocked zone"),
+        (TurnPlan(1, (MoveIntent(99, 2),)), "Unknown drone ID"),
+        (TurnPlan(1, (MoveIntent(1, 99),)), "Unknown destination zone"),
+        (TurnPlan(1, (MoveIntent(1, 1),)), "already at zone"),
+        (TurnPlan(1, (MoveIntent(1, 6),)), "not connected"),
+        (TurnPlan(1, (MoveIntent(1, 5),)), "blocked zone"),
     ],
 )
 def test_preview_rejects_invalid_individual_move(
@@ -373,7 +386,7 @@ def test_preview_rejects_move_for_in_transit_drone() -> None:
     )
 
     with pytest.raises(TurnValidationError, match="not at a zone"):
-        simulation.preview_turn(TurnPlan((MoveIntent(1, 2),)))
+        simulation.preview_turn(TurnPlan(1, (MoveIntent(1, 2),)))
 
 
 def test_preview_rejects_connection_capacity_excess() -> None:
@@ -383,7 +396,7 @@ def test_preview_rejects_connection_capacity_excess() -> None:
         simulation,
         simulation.drones[1].start_move(1, 2, 2),
     )
-    plan = TurnPlan((MoveIntent(2, 2), MoveIntent(3, 2)))
+    plan = TurnPlan(1, (MoveIntent(2, 2), MoveIntent(3, 2)))
 
     with pytest.raises(TurnValidationError, match="Connection 1 capacity"):
         simulation.preview_turn(plan)
@@ -405,10 +418,10 @@ def test_preview_reuses_restricted_connection_on_arrival() -> None:
     )
     initial = SimulationState(Scenario(drone_map, 2))
     simulation = initial.preview_turn(
-        TurnPlan((MoveIntent(1, 3),))
+        TurnPlan(1, (MoveIntent(1, 3),))
     ).next_state
 
-    projection = simulation.preview_turn(TurnPlan((MoveIntent(2, 3),)))
+    projection = simulation.preview_turn(TurnPlan(2, (MoveIntent(2, 3),)))
 
     assert projection.connection_users == {2: frozenset({2})}
     assert projection.next_state.drones[1] == Drone(1, AtZone(3))
@@ -416,7 +429,7 @@ def test_preview_reuses_restricted_connection_on_arrival() -> None:
     assert simulation.drones[1].state == InTransit(2, 3, 1)
     assert simulation.drones[2].state == AtZone(1)
 
-    arrival = projection.next_state.preview_turn(TurnPlan(()))
+    arrival = projection.next_state.preview_turn(TurnPlan(3, ()))
     assert arrival.connection_users == {}
     assert arrival.next_state.drones[2] == Drone(2, AtZone(3))
 
@@ -424,7 +437,9 @@ def test_preview_reuses_restricted_connection_on_arrival() -> None:
 def test_preview_counts_new_one_turn_moves_against_link_capacity() -> None:
     """New users count even when they finish crossing within one turn."""
     simulation = SimulationState(make_preview_scenario())
-    plan = TurnPlan(tuple(MoveIntent(drone_id, 2) for drone_id in (1, 2, 3)))
+    plan = TurnPlan(
+        1, tuple(MoveIntent(drone_id, 2) for drone_id in (1, 2, 3)),
+    )
 
     with pytest.raises(TurnValidationError, match="Connection 1 capacity"):
         simulation.preview_turn(plan)
@@ -437,7 +452,7 @@ def test_preview_rejects_projected_zone_capacity_excess() -> None:
         simulation,
         simulation.drones[1].start_move(1, 2, 1),
     )
-    plan = TurnPlan((MoveIntent(2, 2),))
+    plan = TurnPlan(1, (MoveIntent(2, 2),))
 
     with pytest.raises(TurnValidationError, match="Zone 2 capacity"):
         simulation.preview_turn(plan)
@@ -452,7 +467,7 @@ def test_preview_counts_same_turn_departure_before_zone_capacity() -> None:
         1,
     ).advance_one_turn(destination_is_goal=False)
     replace_drone_for_test(simulation, at_middle)
-    plan = TurnPlan((MoveIntent(1, 4), MoveIntent(2, 2)))
+    plan = TurnPlan(1, (MoveIntent(1, 4), MoveIntent(2, 2)))
 
     projection = simulation.preview_turn(plan)
 

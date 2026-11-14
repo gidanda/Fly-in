@@ -95,6 +95,11 @@ class SimulationState:
 
     def preview_turn(self, plan: TurnPlan) -> TurnProjection:
         """Return a validated next-turn projection without changing state."""
+        if plan.execution_turn != self._current_turn + 1:
+            raise TurnValidationError(
+                f"Plan execution_turn must be {self._current_turn + 1}, "
+                f"got {plan.execution_turn}"
+            )
         resolved_moves = self._resolve_moves(plan)
         connection_users = self._collect_connection_users(resolved_moves)
         self._validate_connection_capacities(connection_users)

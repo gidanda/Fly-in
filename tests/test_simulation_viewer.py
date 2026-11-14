@@ -32,9 +32,9 @@ def make_history() -> list[SimulationState]:
     )
     initial = SimulationState(Scenario(drone_map, 2))
     moving = initial.preview_turn(
-        TurnPlan((MoveIntent(1, 2), MoveIntent(2, 2)))
+        TurnPlan(1, (MoveIntent(1, 2), MoveIntent(2, 2)))
     ).next_state
-    finished = moving.preview_turn(TurnPlan(())).next_state
+    finished = moving.preview_turn(TurnPlan(2, ())).next_state
     return [initial, moving, finished]
 
 

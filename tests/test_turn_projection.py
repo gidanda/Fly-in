@@ -60,7 +60,7 @@ def make_state() -> SimulationState:
 def make_projection() -> TurnProjection:
     """Create a valid projection shared by basic tests."""
     state = make_state()
-    return state.preview_turn(TurnPlan((MoveIntent(1, 2),)))
+    return state.preview_turn(TurnPlan(1, (MoveIntent(1, 2),)))
 
 
 def test_stores_valid_projection_data() -> None:
@@ -68,7 +68,7 @@ def test_stores_valid_projection_data() -> None:
     projection = make_projection()
 
     assert projection.source_turn == 0
-    assert projection.plan == TurnPlan((MoveIntent(1, 2),))
+    assert projection.plan == TurnPlan(1, (MoveIntent(1, 2),))
     assert projection.next_state.current_turn == 1
     assert projection.next_state.drones[1] == Drone(1, AtZone(2))
     assert projection.connection_users == {1: frozenset({1})}
@@ -82,7 +82,7 @@ def test_rejects_invalid_source_turn(source_turn: int) -> None:
     with pytest.raises(ValueError, match="source_turn"):
         TurnProjection(
             source_turn,
-            TurnPlan(()),
+            TurnPlan(1, ()),
             projection.next_state,
             {},
         )
@@ -106,7 +106,7 @@ def test_rejects_non_simulation_next_state() -> None:
     with pytest.raises(ValueError, match="next_state"):
         TurnProjection(
             0,
-            TurnPlan(()),
+            TurnPlan(1, ()),
             object(),  # type: ignore[arg-type]
             {},
         )
@@ -115,7 +115,7 @@ def test_rejects_non_simulation_next_state() -> None:
 def test_rejects_next_state_at_wrong_turn() -> None:
     """The next state must immediately follow the source turn."""
     with pytest.raises(ValueError, match="exactly one turn"):
-        TurnProjection(0, TurnPlan(()), make_state(), {})
+        TurnProjection(0, TurnPlan(1, ()), make_state(), {})
 
 
 @pytest.mark.parametrize("connection_id", [0, -1, True])
@@ -126,7 +126,7 @@ def test_rejects_invalid_connection_id(connection_id: int) -> None:
     with pytest.raises(ValueError, match="connection_id"):
         TurnProjection(
             0,
-            TurnPlan(()),
+            TurnPlan(1, ()),
             projection.next_state,
             {connection_id: frozenset({1})},
         )
@@ -138,7 +138,7 @@ def test_rejects_mutable_connection_user_set() -> None:
     users = cast(dict[int, frozenset[int]], {1: {1}})
 
     with pytest.raises(ValueError, match="must be a frozenset"):
-        TurnProjection(0, TurnPlan(()), projection.next_state, users)
+        TurnProjection(0, TurnPlan(1, ()), projection.next_state, users)
 
 
 @pytest.mark.parametrize("drone_id", [0, -1, True])
@@ -149,7 +149,7 @@ def test_rejects_invalid_connection_user_id(drone_id: int) -> None:
     with pytest.raises(ValueError, match="drone_id"):
         TurnProjection(
             0,
-            TurnPlan(()),
+            TurnPlan(1, ()),
             projection.next_state,
             {1: frozenset({drone_id})},
         )
@@ -162,7 +162,7 @@ def test_rejects_connection_user_missing_from_next_state() -> None:
     with pytest.raises(ValueError, match="connection user must exist"):
         TurnProjection(
             0,
-            TurnPlan(()),
+            TurnPlan(1, ()),
             projection.next_state,
             {1: frozenset({99})},
         )
@@ -175,7 +175,7 @@ def test_rejects_drone_using_multiple_connections() -> None:
     with pytest.raises(ValueError, match="multiple connections"):
         TurnProjection(
             0,
-            TurnPlan(()),
+            TurnPlan(1, ()),
             projection.next_state,
             {1: frozenset({1}), 2: frozenset({1})},
         )
@@ -188,7 +188,7 @@ def test_rejects_planned_drone_missing_from_next_state() -> None:
     with pytest.raises(ValueError, match="planned drone must exist"):
         TurnProjection(
             0,
-            TurnPlan((MoveIntent(99, 2),)),
+            TurnPlan(1, (MoveIntent(99, 2),)),
             projection.next_state,
             {},
         )
@@ -201,7 +201,7 @@ def test_rejects_planned_drone_without_connection_usage() -> None:
     with pytest.raises(ValueError, match="must use a connection"):
         TurnProjection(
             0,
-            TurnPlan((MoveIntent(1, 2),)),
+            TurnPlan(1, (MoveIntent(1, 2),)),
             projection.next_state,
             {},
         )
@@ -213,7 +213,7 @@ def test_copies_supplied_connection_mapping() -> None:
     users: dict[int, frozenset[int]] = {}
     copied_projection = TurnProjection(
         0,
-        TurnPlan(()),
+        TurnPlan(1, ()),
         projection.next_state,
         users,
     )

@@ -26,10 +26,12 @@ class MoveIntent:
 class TurnPlan:
     """Collect every new movement intended for one simulation turn."""
 
+    execution_turn: int
     moves: tuple[MoveIntent, ...]
 
     def __post_init__(self) -> None:
         """Require an immutable collection with one move per drone."""
+        validate_positive_integer(self.execution_turn, "execution_turn")
         if not isinstance(self.moves, tuple):
             raise ValueError("moves must be a tuple")
         if not all(isinstance(move, MoveIntent) for move in self.moves):

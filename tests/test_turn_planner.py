@@ -64,6 +64,8 @@ def test_planner_moves_downstream_drones_first() -> None:
     state = state.preview_turn(first_plan).next_state
     second_plan = planner.create_plan(state)
 
+    assert first_plan.execution_turn == 1
+    assert second_plan.execution_turn == 2
     assert first_plan.moves == (MoveIntent(1, 2),)
     assert second_plan.moves == (
         MoveIntent(1, 3),
@@ -166,7 +168,7 @@ def test_planner_returns_an_empty_plan_when_every_drone_finished() -> None:
     state = make_state(zones, connections, 1)
     planner = TurnPlanner(Pathfinder(state.drone_map))
     state = state.preview_turn(
-        TurnPlan((MoveIntent(1, 2),))
+        TurnPlan(1, (MoveIntent(1, 2),))
     ).next_state
 
     assert state.all_drones_finished()
