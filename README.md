@@ -138,7 +138,7 @@ Supported zone metadata:
 | Key | Meaning | Default |
 | --- | --- | --- |
 | `zone` | `normal`, `priority`, `restricted`, or `blocked` | `normal` |
-| `color` | Single-word display color | terminal default |
+| `color` | Single-word display color | Unspecified; white in the GUI |
 | `max_drones` | Maximum simultaneous zone occupancy | `1` |
 
 Supported connection metadata:
@@ -159,13 +159,30 @@ message.
 ## Output format
 
 Each output line represents one simulation turn. Only drones that moved during
-that turn are included:
+that turn are included.
+
+The following complete input combines the definitions shown above:
 
 ```text
-D1-waypoint1
-D1-waypoint2 D2-waypoint1
-D1-goal D2-waypoint2
-D2-goal
+nb_drones: 3
+start_hub: start 0 0 [color=green]
+hub: corridor 1 0 [zone=priority color=yellow max_drones=2]
+hub: tunnel 2 0 [zone=restricted color=purple max_drones=1]
+end_hub: goal 3 0 [color=blue]
+connection: start-corridor [max_link_capacity=2]
+connection: corridor-tunnel [max_link_capacity=1]
+connection: tunnel-goal [max_link_capacity=2]
+```
+
+Expected terminal output for this input:
+
+```text
+D1-corridor D2-corridor
+D1-corridor-tunnel D3-corridor
+D1-tunnel D2-corridor-tunnel
+D1-goal D2-tunnel D3-corridor-tunnel
+D2-goal D3-tunnel
+D3-goal
 ```
 
 A zone arrival uses `D<ID>-<zone-name>`. The first turn of travel into a
