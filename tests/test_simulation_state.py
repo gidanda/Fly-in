@@ -407,13 +407,15 @@ def test_preview_rejects_connection_capacity_excess() -> None:
 
 
 def test_preview_reuses_restricted_connection_on_arrival() -> None:
-    """An arriving drone frees a capacity-one link for a new departure."""
+    """An arriving drone frees connection capacity for a new departure."""
     original_map = make_preview_scenario().drone_map
     drone_map = DroneMap(
         original_map.get_zones(),
         [
-            Connection(link.id, link.zone_a_id, link.zone_b_id, 1)
-            for link in original_map.get_connections()
+            Connection(
+                connection.id, connection.zone_a_id, connection.zone_b_id, 1,
+            )
+            for connection in original_map.get_connections()
         ],
     )
     initial = SimulationState(Scenario(drone_map, 2))

@@ -3,7 +3,7 @@
 import pytest
 
 from fly_in.connection import Connection
-from fly_in.drone import AtZone, InTransit
+from fly_in.drone import AtZone, Drone, InTransit
 from fly_in.drone_map import DroneMap
 from fly_in.errors import PlanningError
 from fly_in.pathfinder import Pathfinder
@@ -122,9 +122,84 @@ def test_planner_reserves_capacity_for_restricted_arrivals() -> None:
     assert first_plan.moves == (MoveIntent(1, 2),)
     assert isinstance(next_state.drones[1].state, InTransit)
     assert isinstance(next_state.drones[2].state, AtZone)
+    assert planner._required_plan == TurnPlan(2, ())
 
-    waiting_plan = planner.create_plan(next_state)
-    assert waiting_plan.moves == ()
+    following_plan = planner.create_plan(next_state)
+    assert following_plan.moves == (MoveIntent(2, 2),)
+    saved_plan = planner._required_plan
+    assert saved_plan is not None
+    assert saved_plan.execution_turn == 3
+    assert MoveIntent(1, 3) in saved_plan.moves
+    arrival_state = next_state.preview_turn(following_plan).next_state
+    third_plan = planner.create_plan(arrival_state)
+    assert all(move in third_plan.moves for move in saved_plan.moves)
+    final_state = arrival_state.preview_turn(third_plan).next_state
+    assert final_state.drones[2].state == AtZone(2)
+
+
+def test_next_plan_includes_supporting_downstream_departure() -> None:
+    """A full saved plan keeps the move needed to free an exit destination."""
+    zones = [
+        make_zone(1, "start", ZoneRole.START),
+        make_zone(2, "restricted", zone_type=ZoneType.RESTRICTED),
+        make_zone(3, "middle"),
+        make_zone(4, "goal", ZoneRole.END),
+    ]
+    initial = make_state(
+        zones,
+        [Connection(1, 1, 2, 1), Connection(2, 2, 3, 1),
+         Connection(3, 3, 4, 1)],
+        3,
+    )
+    state = SimulationState._from_snapshot(
+        initial.drone_map,
+        {1: Drone(1, AtZone(3)), 2: Drone(2, AtZone(2)),
+         3: Drone(3, InTransit(1, 2, 1))},
+        3,
+    )
+    planner = TurnPlanner(Pathfinder(state.drone_map))
+
+    plan = planner._build_required_next_plan(state)
+
+    assert plan == TurnPlan(4, (MoveIntent(1, 4), MoveIntent(2, 3)))
+    assert planner._required_plan is None
+    result = state.preview_turn(plan).next_state
+    assert result.drones[3].state == AtZone(2)
+
+
+def test_next_plan_rejects_exit_requiring_restricted_movement() -> None:
+    """A future restricted departure cannot support a new arrival promise."""
+    initial = make_state(
+        [make_zone(1, "start", ZoneRole.START),
+         make_zone(2, "first", zone_type=ZoneType.RESTRICTED),
+         make_zone(3, "second", zone_type=ZoneType.RESTRICTED),
+         make_zone(4, "goal", ZoneRole.END)],
+        [Connection(1, 1, 2, 1), Connection(2, 2, 3, 1),
+         Connection(3, 3, 4, 1)],
+        2,
+    )
+    state = SimulationState._from_snapshot(
+        initial.drone_map,
+        {1: Drone(1, AtZone(2)), 2: Drone(2, InTransit(1, 2, 1))},
+        2,
+    )
+    planner = TurnPlanner(Pathfinder(state.drone_map))
+    assert planner._build_required_next_plan(state) is None
+    assert planner._required_plan is None
+
+
+def test_planner_rejects_saved_plan_for_another_turn() -> None:
+    """A stored promise cannot silently run at a different time."""
+    state = make_state(
+        [make_zone(1, "start", ZoneRole.START),
+         make_zone(2, "goal", ZoneRole.END)],
+        [Connection(1, 1, 2, 1)],
+        1,
+    )
+    planner = TurnPlanner(Pathfinder(state.drone_map))
+    planner._required_plan = TurnPlan(2, (MoveIntent(1, 2),))
+    with pytest.raises(PlanningError, match="different turn"):
+        planner.create_plan(state)
 
 
 def test_planner_raises_when_no_progress_is_possible() -> None:

@@ -16,6 +16,7 @@ class TurnPlanner:
     def __init__(self, pathfinder: Pathfinder) -> None:
         """Store the static analysis used to order movement choices."""
         self._pathfinder = pathfinder
+        self._required_plan: TurnPlan | None = None
 
     def create_plan(self, state: SimulationState) -> TurnPlan:
         """Return a greedy, capacity-aware plan for the current turn."""
@@ -25,8 +26,20 @@ class TurnPlanner:
             )
 
         accepted_moves: list[MoveIntent] = []
+        if self._required_plan is not None:
+            if self._required_plan.execution_turn != state.current_turn + 1:
+                raise PlanningError("Saved plan is for a different turn")
+            accepted_moves.extend(self._required_plan.moves)
+        base_plan = TurnPlan(state.current_turn + 1, tuple(accepted_moves))
+        base_projection = state.preview_turn(base_plan)
+        next_plan = self._build_required_next_plan(base_projection.next_state)
+        required_drone_ids = {
+            move.drone_id for move in accepted_moves
+        }
 
         for drone in self._get_ordered_drones(state):
+            if drone.id in required_drone_ids:
+                continue
             drone_state = drone.state
             if not isinstance(drone_state, AtZone):
                 continue
@@ -46,12 +59,14 @@ class TurnPlanner:
                 except TurnValidationError:
                     continue
 
-                if not self._has_safe_arrival_reservations(
+                candidate_next_plan = self._build_required_next_plan(
                     projection.next_state
-                ):
+                )
+                if candidate_next_plan is None:
                     continue
 
                 accepted_moves.append(intent)
+                next_plan = candidate_next_plan
                 break
 
         plan = TurnPlan(
@@ -66,6 +81,9 @@ class TurnPlanner:
                 for drone in state.drones.values()
             )
         ):
+            if next_plan is None:
+                raise PlanningError("Cannot secure a safe next-turn plan")
+            self._required_plan = next_plan
             return plan
 
         raise PlanningError(
@@ -139,6 +157,78 @@ class TurnPlanner:
 
         ordered.sort()
         return [item[2] for item in ordered]
+
+    def _build_required_next_plan(
+        self,
+        next_state: SimulationState,
+    ) -> TurnPlan | None:
+        """Secure a whole greedy next-turn plan using only cost-one moves.
+
+        Count forced arrivals first, then choose departures downstream first.
+        Temporarily overfull sources may be relieved by later departures;
+        the final preview checks all zones together.
+        """
+        drone_map = next_state.drone_map
+        zone_counts = {
+            zone.id: next_state.get_zone_occupancy(zone.id)
+            for zone in drone_map.get_zones()
+        }
+        connection_counts: dict[int, int] = {}
+        for drone in next_state.drones.values():
+            transit = drone.state
+            if not isinstance(transit, InTransit):
+                continue
+            if transit.remaining_turns == 1:
+                zone_counts[transit.destination_zone_id] += 1
+            else:
+                connection_id = transit.connection_id
+                connection_counts[connection_id] = (
+                    connection_counts.get(connection_id, 0) + 1
+                )
+
+        moves: list[MoveIntent] = []
+        for drone in self._get_ordered_drones(next_state):
+            at_zone = drone.state
+            if not isinstance(at_zone, AtZone):
+                continue
+            for destination_id in self._get_ordered_destination_ids(
+                at_zone.zone_id
+            ):
+                destination = drone_map.get_zone(destination_id)
+                if destination.movement_cost() != 1:
+                    continue
+                if (
+                    not destination.has_unlimited_capacity()
+                    and zone_counts[destination_id]
+                    >= cast(int, destination.max_drones)
+                ):
+                    continue
+                connection = drone_map.get_connection_between(
+                    at_zone.zone_id, destination_id,
+                )
+                if connection is None:
+                    continue
+                if (
+                    connection_counts.get(connection.id, 0)
+                    >= connection.max_capacity
+                ):
+                    continue
+                moves.append(MoveIntent(drone.id, destination_id))
+                zone_counts[at_zone.zone_id] -= 1
+                zone_counts[destination_id] += 1
+                connection_counts[connection.id] = (
+                    connection_counts.get(connection.id, 0) + 1
+                )
+                break
+
+        plan = TurnPlan(next_state.current_turn + 1, tuple(moves))
+        try:
+            projection = next_state.preview_turn(plan)
+        except TurnValidationError:
+            return None
+        if not self._has_safe_arrival_reservations(projection.next_state):
+            return None
+        return plan
 
     def _has_safe_arrival_reservations(
         self,

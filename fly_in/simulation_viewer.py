@@ -1,5 +1,7 @@
 """Display a precomputed simulation history in a Tk window."""
 
+from __future__ import annotations
+
 import tkinter as tk
 from collections.abc import Sequence
 from tkinter import ttk

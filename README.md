@@ -222,12 +222,14 @@ For each turn, `TurnPlanner`:
 5. tentatively adds each move to the current turn plan;
 6. asks `SimulationState.preview_turn()` to validate all simultaneous zone and
    connection capacities; and
-7. reserves capacity for forced next-turn arrivals from restricted travel.
+7. builds and validates a next-turn plan to accommodate forced arrivals.
 
 If the best candidate is unavailable, the planner tries the next candidate. A
-drone waits when no safe candidate exists. Restricted-arrival reservations are
-deliberately conservative: they do not assume that a currently occupying drone
-will leave on the following turn.
+drone waits when no safe candidate exists. Lookahead uses only new one-turn
+moves, allowing downstream departures to free space for restricted arrivals.
+The entire verified next-turn plan is saved, not just selected departures.
+On the following call its moves form the fixed base for further greedy moves.
+The planner is therefore used sequentially for a single simulation.
 
 ### 4. Immutable turn simulation
 
@@ -236,7 +238,8 @@ immutable value objects. Previewing a turn creates a new `SimulationState`
 snapshot rather than modifying the current one.
 
 `SimulationState.preview_turn()` resolves map-dependent movement information,
-counts every connection user during the turn, applies movement, and validates
+counts continuing transit and new departures against connection capacity,
+excluding existing transit arriving that turn, applies movement, and validates
 the resulting zone occupancy. A returned projection is therefore executable
 with respect to movement and capacity rules, although the planner remains
 responsible for choosing an efficient plan.
@@ -261,34 +264,34 @@ responsible for choosing an efficient plan.
 The following results were measured with the included maps and the current
 greedy planner. A lower turn count is better.
 
-| Map | Drones | Result | Reference target |
+| Map | Drones | Result | Optimum (subject v3.0) |
 | --- | ---: | ---: | ---: |
-| Linear path | 2 | 4 | 6 or fewer |
-| Simple fork | 4 | 4 | 8 or fewer |
-| Basic capacity | 4 | 4 | 6 or fewer |
-| Dead end trap | 5 | 8 | 12 or fewer |
-| Circular loop | 6 | 15 | 15 or fewer |
-| Priority puzzle | 5 | 7 | 12 or fewer |
-| Maze nightmare | 8 | 13 | 30 or fewer |
-| Capacity hell | 12 | 16 | 35 or fewer |
-| Ultimate challenge | 15 | 26 | 45 or fewer |
-| The Impossible Dream | 25 | 43 | Reference record: 45 |
+| Linear path | 2 | 4 | 4 |
+| Simple fork | 4 | 4 | 4 |
+| Basic capacity | 4 | 4 | 4 |
+| Dead end trap | 5 | 8 | 8 |
+| Circular loop | 6 | 10 | 10 |
+| Priority puzzle | 5 | 6 | 6 |
+| Maze nightmare | 8 | 13 | 13 |
+| Capacity hell | 12 | 16 | 16 |
+| Ultimate challenge | 15 | 26 | 26 |
+| The Impossible Dream | 25 | 45 | 43 |
 
-All supplied reference targets are met. The optional challenger map completes
-two turns faster than its supplied 45-turn reference record.
+All nine mandatory maps match their listed optima and satisfy the required
+25% margin. The optional challenger map is two turns above its optimum.
 
 ## Testing
 
 The test suite covers parsing, error context, graph lookup, shortest-cost
 analysis, immutable drone transitions, turn-plan validation, simultaneous
-capacity handling, restricted movement, conservative reservations, planning,
-formatting, terminal colors, the runner, and the CLI entry point.
+capacity handling, restricted movement, saved lookahead plans, planning,
+formatting, GUI controls, the runner, and the CLI entry point.
 
 All distributed maps are also parsed and executed as integration checks.
 
 ## Resources
 
-- Fly-in subject, version 1.6, supplied by 42.
+- Fly-in subject, versions 1.6 and 3.0, supplied by 42.
 - [Python `heapq` documentation](https://docs.python.org/3.10/library/heapq.html)
 - [Python `dataclasses` documentation](https://docs.python.org/3/library/dataclasses.html)
 - [Python `argparse` documentation](https://docs.python.org/3/library/argparse.html)
