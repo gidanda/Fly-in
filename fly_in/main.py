@@ -1,4 +1,4 @@
-"""Command-line entry point for the Fly-in simulation."""
+"""Fly-inシミュレーションのコマンドライン起動処理。"""
 
 import argparse
 import sys
@@ -17,7 +17,7 @@ from fly_in.turn_planner import TurnPlanner
 def _parse_arguments(
     argv: Sequence[str] | None = None,
 ) -> argparse.Namespace:
-    """Parse command-line arguments for one simulation run."""
+    """シミュレーション実行用のコマンドライン引数を解析する。"""
     parser = argparse.ArgumentParser(
         prog="python -m fly_in",
         description="Simulate drone movement through a Fly-in map.",
@@ -36,7 +36,7 @@ def _parse_arguments(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the requested map and return a process exit code."""
+    """指定マップを実行し、プロセスの終了コードを返す。"""
     arguments = _parse_arguments(argv)
 
     try:

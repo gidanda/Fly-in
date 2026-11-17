@@ -1,8 +1,8 @@
-"""Shared integer validation for simulation value objects."""
+"""シミュレーションの値オブジェクトで共用する整数検証。"""
 
 
 def validate_positive_integer(value: int, field_name: str) -> None:
-    """Require an integer greater than zero, excluding booleans."""
+    """真偽値を除く、0より大きい整数であることを確認する。"""
     if (
         not isinstance(value, int)
         or isinstance(value, bool)
@@ -12,7 +12,7 @@ def validate_positive_integer(value: int, field_name: str) -> None:
 
 
 def validate_non_negative_integer(value: int, field_name: str) -> None:
-    """Require an integer at least zero, excluding booleans."""
+    """真偽値を除く、0以上の整数であることを確認する。"""
     if (
         not isinstance(value, int)
         or isinstance(value, bool)

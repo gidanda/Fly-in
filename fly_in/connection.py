@@ -1,11 +1,11 @@
-"""Connection definitions for a Fly-in map."""
+"""Fly-inマップの接続定義。"""
 
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class Connection:
-    """Store a bidirectional connection between two zones."""
+    """2つのゾーンを結ぶ双方向の接続を保持する。"""
 
     id: int
     zone_a_id: int
@@ -13,14 +13,14 @@ class Connection:
     max_capacity: int
 
     def connects(self, zone_id: int) -> bool:
-        """Return whether this connection contains the given zone."""
+        """指定ゾーンがこの接続の端点に含まれるかを返す。"""
         return zone_id in (self.zone_a_id, self.zone_b_id)
 
     def other_zone(self, zone_id: int) -> int:
-        """Return the zone at the opposite end of this connection.
+        """指定ゾーンと反対側の端点のゾーンIDを返す。
 
         Raises:
-            ValueError: If the given zone is not part of this connection.
+            ValueError: 指定ゾーンがこの接続の端点ではない場合。
         """
         if zone_id == self.zone_a_id:
             return self.zone_b_id

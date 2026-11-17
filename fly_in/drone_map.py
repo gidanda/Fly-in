@@ -1,4 +1,4 @@
-"""Container and lookup operations for a Fly-in map."""
+"""Fly-inマップの保持と各要素の検索処理。"""
 
 from collections.abc import Iterable
 
@@ -7,14 +7,14 @@ from fly_in.zone import Zone, ZoneRole
 
 
 class DroneMap:
-    """Own zones and connections and provide graph lookups."""
+    """ゾーンと接続を保持し、グラフの検索機能を提供する。"""
 
     def __init__(
         self,
         zones: Iterable[Zone],
         connections: Iterable[Connection],
     ) -> None:
-        """Build indexes from caller-validated map definitions."""
+        """呼び出し側で検証済みのマップ定義から索引を構築する。"""
         self._zones: dict[int, Zone] = {}
         self._connections: dict[int, Connection] = {}
         self._connection_ids_by_zone: dict[int, list[int]] = {}
@@ -29,22 +29,22 @@ class DroneMap:
         self.end_zone_id = self._find_role(ZoneRole.END)
 
     def get_zones(self) -> list[Zone]:
-        """Return all zone definitions without exposing the internal index."""
+        """内部索引を公開せず、全ゾーン定義を新しいリストで返す。"""
         return list(self._zones.values())
 
     def get_connections(self) -> list[Connection]:
-        """Return all connections without exposing the internal index."""
+        """内部索引を公開せず、全接続を新しいリストで返す。"""
         return list(self._connections.values())
 
     def has_zone(self, zone_id: int) -> bool:
-        """Return whether a zone ID exists in this map."""
+        """指定ゾーンIDがマップに存在するかを返す。"""
         return zone_id in self._zones
 
     def get_zone(self, zone_id: int) -> Zone:
-        """Return a zone by ID.
+        """指定IDのゾーンを返す。
 
         Raises:
-            KeyError: If the zone ID does not exist.
+            KeyError: 指定ゾーンIDが存在しない場合。
         """
         try:
             return self._zones[zone_id]
@@ -52,14 +52,14 @@ class DroneMap:
             raise KeyError(f"Unknown zone ID: {zone_id}") from error
 
     def has_connection(self, connection_id: int) -> bool:
-        """Return whether a connection ID exists in this map."""
+        """指定接続IDがマップに存在するかを返す。"""
         return connection_id in self._connections
 
     def get_connection(self, connection_id: int) -> Connection:
-        """Return a connection by ID.
+        """指定IDの接続を返す。
 
         Raises:
-            KeyError: If the connection ID does not exist.
+            KeyError: 指定接続IDが存在しない場合。
         """
         try:
             return self._connections[connection_id]
@@ -73,7 +73,7 @@ class DroneMap:
         zone_a_id: int,
         zone_b_id: int,
     ) -> Connection | None:
-        """Return the connection between two zones, if one exists."""
+        """2つのゾーン間の接続を返し、接続がなければNoneを返す。"""
         if not self.has_zone(zone_a_id):
             raise KeyError(f"Unknown zone ID: {zone_a_id}")
         if not self.has_zone(zone_b_id):
@@ -87,7 +87,7 @@ class DroneMap:
         return self._connections[connection_id]
 
     def get_connections_from(self, zone_id: int) -> list[Connection]:
-        """Return every connection incident to a zone."""
+        """指定ゾーンを端点に持つ全接続を返す。"""
         if not self.has_zone(zone_id):
             raise KeyError(f"Unknown zone ID: {zone_id}")
         return [
@@ -96,19 +96,19 @@ class DroneMap:
         ]
 
     def get_neighbor_ids(self, zone_id: int) -> list[int]:
-        """Return IDs of all directly connected zones."""
+        """直接接続している全ゾーンのIDを返す。"""
         return [
             connection.other_zone(zone_id)
             for connection in self.get_connections_from(zone_id)
         ]
 
     def _register_zone(self, zone: Zone) -> None:
-        """Add one zone to the internal indexes."""
+        """1つのゾーンを内部索引に登録する。"""
         self._zones[zone.id] = zone
         self._connection_ids_by_zone[zone.id] = []
 
     def _register_connection(self, connection: Connection) -> None:
-        """Add one connection to the internal indexes."""
+        """1つの接続を内部索引に登録する。"""
         pair = frozenset((connection.zone_a_id, connection.zone_b_id))
         self._connections[connection.id] = connection
         self._connection_ids_by_pair[pair] = connection.id
@@ -120,7 +120,7 @@ class DroneMap:
         )
 
     def _find_role(self, role: ZoneRole) -> int:
-        """Look up a role whose existence and uniqueness are prevalidated."""
+        """存在と一意性が検証済みの役割に対応するゾーンIDを取得する。"""
         return next(
             zone.id for zone in self._zones.values() if zone.role is role
         )

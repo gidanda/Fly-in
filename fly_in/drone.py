@@ -1,4 +1,4 @@
-"""Dynamic state and state transitions for one drone."""
+"""1機のドローンの動的な状態と状態遷移。"""
 
 from dataclasses import dataclass
 
@@ -8,25 +8,25 @@ from fly_in.validation import validate_positive_integer
 
 @dataclass(frozen=True)
 class AtZone:
-    """Represent a drone currently occupying one zone."""
+    """ゾーンに滞在している状態を表す。"""
 
     zone_id: int
 
     def __post_init__(self) -> None:
-        """Validate the occupied zone identifier."""
+        """滞在先のゾーンIDを検証する。"""
         validate_positive_integer(self.zone_id, "zone_id")
 
 
 @dataclass(frozen=True)
 class InTransit:
-    """Represent a drone currently traveling along one connection."""
+    """接続上を移動している状態を表す。"""
 
     connection_id: int
     destination_zone_id: int
     remaining_turns: int
 
     def __post_init__(self) -> None:
-        """Validate identifiers and the remaining travel duration."""
+        """接続・到着先のIDと到着までの残りターン数を検証する。"""
         validate_positive_integer(self.connection_id, "connection_id")
         validate_positive_integer(
             self.destination_zone_id,
@@ -37,7 +37,7 @@ class InTransit:
 
 @dataclass(frozen=True)
 class Finished:
-    """Represent a drone that has reached the end zone."""
+    """ゴールに到着済みの状態を表す。"""
 
 
 DroneState = AtZone | InTransit | Finished
@@ -45,13 +45,13 @@ DroneState = AtZone | InTransit | Finished
 
 @dataclass(frozen=True)
 class Drone:
-    """Represent one drone at one immutable point in time."""
+    """ある時点の1機のドローンを、変更不能な値として表す。"""
 
     id: int
     state: DroneState
 
     def __post_init__(self) -> None:
-        """Validate the drone identifier and state."""
+        """ドローンIDと状態を検証する。"""
         validate_positive_integer(self.id, "id")
         if not isinstance(self.state, (AtZone, InTransit, Finished)):
             raise ValueError("state must be a valid drone state")
@@ -62,7 +62,7 @@ class Drone:
         destination_zone_id: int,
         travel_turns: int,
     ) -> "Drone":
-        """Return a new in-transit drone after caller-side move validation."""
+        """呼び出し側の移動検証を前提に、移動中の新しいドローンを返す。"""
         return Drone(
             id=self.id,
             state=InTransit(
@@ -73,7 +73,7 @@ class Drone:
         )
 
     def advance_one_turn(self, destination_is_goal: bool) -> "Drone":
-        """Return this in-transit drone after one turn of travel."""
+        """移動中のドローンを1ターン進めた新しいドローンを返す。"""
         if not isinstance(self.state, InTransit):
             raise DroneStateError(
                 "Only an in-transit drone can advance one turn"

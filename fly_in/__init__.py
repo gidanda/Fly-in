@@ -1,1 +1,1 @@
-"""Turn-based drone routing and simulation for the Fly-in project."""
+"""Fly-in課題のターン制ドローン経路探索とシミュレーション。"""

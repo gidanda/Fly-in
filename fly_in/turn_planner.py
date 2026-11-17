@@ -1,4 +1,4 @@
-"""Greedy movement planning for one Fly-in simulation turn."""
+"""Fly-inの1ターン分の移動を貪欲法と先読みで計画する。"""
 
 from typing import cast
 
@@ -11,15 +11,15 @@ from fly_in.zone import ZoneType
 
 
 class TurnPlanner:
-    """Build one safe turn using static goal costs and greedy choices."""
+    """静的なゴールコストと貪欲な選択で、安全な移動計画を作る。"""
 
     def __init__(self, pathfinder: Pathfinder) -> None:
-        """Store the static analysis used to order movement choices."""
+        """移動候補の優先順位に使う静的解析と、保存済み計画の保持先を用意する。"""
         self._pathfinder = pathfinder
         self._required_plan: TurnPlan | None = None
 
     def create_plan(self, state: SimulationState) -> TurnPlan:
-        """Return a greedy, capacity-aware plan for the current turn."""
+        """現在の状態から実行する、容量と次ターンの安全性を考慮した計画を返す。"""
         if state.drone_map is not self._pathfinder.drone_map:
             raise ValueError(
                 "Pathfinder and simulation state use different maps"
@@ -95,7 +95,7 @@ class TurnPlanner:
         self,
         state: SimulationState,
     ) -> list[Drone]:
-        """Return reachable zone-bound drones from downstream to upstream."""
+        """ゴールに到達可能なゾーン滞在中の機体を、ゴールコストの小さい順に返す。"""
         ordered: list[tuple[int, int, Drone]] = []
 
         for drone in state.drones.values():
@@ -118,7 +118,7 @@ class TurnPlanner:
         self,
         current_zone_id: int,
     ) -> list[int]:
-        """Return accessible, strictly goalward neighboring zone IDs."""
+        """進入可能でゴールコストが現在地より小さい隣接ゾーンIDを優先順に返す。"""
         drone_map = self._pathfinder.drone_map
         current_goal_cost = self._pathfinder.get_goal_cost(
             current_zone_id
@@ -162,11 +162,13 @@ class TurnPlanner:
         self,
         next_state: SimulationState,
     ) -> TurnPlan | None:
-        """Secure a whole greedy next-turn plan using only cost-one moves.
+        """今ターンの仮実行後の状態から、次ターンの安全な計画全体を確保する。
 
-        Count forced arrivals first, then choose departures downstream first.
-        Temporarily overfull sources may be relieved by later departures;
-        the final preview checks all zones together.
+        新規移動は1ターンで到着できるものに限定する。
+        強制到着を先に数え、ゴール側から退出を選ぶ。
+        集計途中の容量超過は退出で解消できる場合があるため、
+        最後に計画全体を仮実行して全ゾーンをまとめて検証する。
+        成立すれば計画を返し、確保できなければNoneを返す。保存は呼び出し側が行う。
         """
         drone_map = next_state.drone_map
         zone_counts = {
@@ -234,7 +236,7 @@ class TurnPlanner:
         self,
         next_state: SimulationState,
     ) -> bool:
-        """Return whether every forced next-turn arrival has capacity."""
+        """渡された状態の滞在数に、さらに次ターンの強制到着を加えて容量を確認する。"""
         arrival_counts: dict[int, int] = {}
 
         for drone in next_state.drones.values():

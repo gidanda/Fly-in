@@ -1,4 +1,4 @@
-"""Immutable result of previewing one simulation turn."""
+"""1ターン分の仮実行結果を表す変更不能なデータ。"""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class TurnProjection:
-    """Store the immutable calculated outcome of one proposed turn."""
+    """提案された1ターン分の計画と、その仮実行結果を保持する。"""
 
     source_turn: int
     plan: TurnPlan
@@ -25,7 +25,7 @@ class TurnProjection:
     connection_users: Mapping[int, frozenset[int]]
 
     def __post_init__(self) -> None:
-        """Validate local consistency and protect supplied mappings."""
+        """保持データ間の整合性を検証し、受け取った対応表を変更から保護する。"""
         validate_non_negative_integer(self.source_turn, "source_turn")
         if not isinstance(self.plan, TurnPlan):
             raise ValueError("plan must be a TurnPlan")

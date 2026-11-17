@@ -1,4 +1,4 @@
-"""Format the movements produced by one simulation turn."""
+"""シミュレーション1ターン分の移動を文字列に整形する。"""
 
 from fly_in.drone import AtZone, Drone, Finished, InTransit
 from fly_in.drone_map import DroneMap
@@ -7,14 +7,14 @@ from fly_in.turn_projection import TurnProjection
 
 
 class TurnFormatter:
-    """Build one output line from the state change of a turn."""
+    """1ターンの状態変化から出力用の1行を構築する。"""
 
     def format_turn(
         self,
         source_state: SimulationState,
         projection: TurnProjection,
     ) -> str:
-        """Return the movements in a turn as one space-separated line."""
+        """そのターンの移動を、空白区切りの1行の文字列として返す。"""
         movements: list[str] = []
 
         for drone_id in sorted(source_state.drones):
@@ -36,7 +36,7 @@ class TurnFormatter:
         after: Drone,
         drone_map: DroneMap,
     ) -> str | None:
-        """Return one drone's movement, or None when it did not move."""
+        """1機分の移動文字列を返し、移動がなければNoneを返す。"""
         if before.state == after.state:
             return None
 
@@ -86,6 +86,6 @@ class TurnFormatter:
         zone_id: int,
         drone_map: DroneMap,
     ) -> str:
-        """Return one drone's arrival using the destination zone name."""
+        """到着先ゾーン名を使って、1機分の到着表示を返す。"""
         zone = drone_map.get_zone(zone_id)
         return f"D{drone_id}-{zone.name}"

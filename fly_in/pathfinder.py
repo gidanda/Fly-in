@@ -1,4 +1,4 @@
-"""Static shortest-cost analysis for a Fly-in map."""
+"""Fly-inマップの静的な最短コスト計算。"""
 
 from heapq import heappop, heappush
 
@@ -6,29 +6,31 @@ from fly_in.drone_map import DroneMap
 
 
 class Pathfinder:
-    """Provide minimum movement costs from zones to the end zone."""
+    """各ゾーンからゴールまでの最小移動コストを提供する。"""
 
     def __init__(self, drone_map: DroneMap) -> None:
-        """Analyze the map once and retain its goal costs."""
+        """マップを一度解析し、ゴールまでの最短コストを保持する。"""
         self._drone_map = drone_map
         self._goal_costs = self._calculate_goal_costs()
 
     @property
     def drone_map(self) -> DroneMap:
-        """Return the map used to calculate these goal costs."""
+        """最短コストの計算対象のマップを返す。"""
         return self._drone_map
 
     def get_goal_cost(self, zone_id: int) -> int | None:
-        """Return the minimum turns from a zone to the end, if reachable.
+        """指定ゾーンからゴールまでの最短ターン数を返す。
+
+        到達できない場合はNoneを返す。
 
         Raises:
-            KeyError: If the zone ID does not exist in the map.
+            KeyError: 指定ゾーンIDがマップに存在しない場合。
         """
         self._drone_map.get_zone(zone_id)
         return self._goal_costs.get(zone_id)
 
     def _calculate_goal_costs(self) -> dict[int, int]:
-        """Run reverse Dijkstra analysis from the end zone."""
+        """ゴールを起点とする逆向きのダイクストラ法を実行する。"""
         end_zone_id = self._drone_map.end_zone_id
         goal_costs = {end_zone_id: 0}
         queue = [(0, end_zone_id)]

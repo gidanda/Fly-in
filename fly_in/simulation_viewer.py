@@ -1,4 +1,4 @@
-"""Display a precomputed simulation history in a Tk window."""
+"""計算済みのシミュレーション履歴をTkウィンドウに表示する。"""
 
 from __future__ import annotations
 
@@ -13,10 +13,10 @@ from fly_in.zone import ZoneRole
 
 
 class SimulationViewer:
-    """Replay state snapshots without changing or running the simulation."""
+    """シミュレーションを実行・変更せず、記録済みの状態を再生する。"""
 
     def __init__(self, states: Sequence[SimulationState]) -> None:
-        """Create the window and show the first recorded state."""
+        """ウィンドウを作成し、履歴の先頭の状態を表示する。"""
         if not states:
             raise VisualizationError("State history must not be empty")
         self._states = states
@@ -53,32 +53,32 @@ class SimulationViewer:
         self._draw_state()
 
     def run(self) -> None:
-        """Handle window events until the viewer is closed."""
+        """ウィンドウが閉じられるまで操作イベントを処理する。"""
         self._window.mainloop()
 
     def _next_turn(self) -> None:
-        """Select the next snapshot, if available, and redraw it."""
+        """次の状態があれば表示位置を進め、再描画する。"""
         if self._current_index < len(self._states) - 1:
             self._current_index += 1
             self._draw_state()
 
     def _previous_turn(self) -> None:
-        """Select the preceding snapshot without going before the first."""
+        """先頭より前には戻らず、1つ前の状態へ表示を切り替える。"""
         if self._current_index > 0:
             self._current_index -= 1
             self._draw_state()
 
     def _reset(self) -> None:
-        """Return to the first recorded snapshot without recalculation."""
+        """再計算せず、表示を履歴の先頭へ戻す。"""
         self._current_index = 0
         self._draw_state()
 
     def _on_resize(self, event: tk.Event[tk.Misc]) -> None:
-        """Fit the current map again after the canvas changes size."""
+        """Canvasのサイズ変更に合わせ、マップを再描画する。"""
         self._draw_state()
 
     def _get_positions(self) -> dict[int, tuple[float, float]]:
-        """Fit map coordinates into the canvas with a shared scale."""
+        """縦横共通の倍率で、マップ座標をCanvas内に収める。"""
         zones = self._states[self._current_index].drone_map.get_zones()
         min_x = min(zone.x for zone in zones)
         max_x = max(zone.x for zone in zones)
@@ -109,14 +109,19 @@ class SimulationViewer:
         }
 
     def _draw_state(self) -> None:
-        """Redraw edges, zones, drones, and playback controls."""
+        """接続・ゾーン・ドローンを再描画し、表示と操作部品を更新する。"""
         state = self._states[self._current_index]
         positions = self._get_positions()
         self._canvas.delete("all")
         self._draw_connections(state, positions)
         self._draw_zones(state, positions)
         self._draw_drones(state, positions)
-        self._turn_label.configure(text=f"Turn: {state.current_turn}")
+        self._turn_label.configure(
+            text=(
+                f"Turn: {state.current_turn}/"
+                f"{self._states[-1].current_turn}"
+            )
+        )
         backward_state = tk.DISABLED if self._current_index == 0 else tk.NORMAL
         self._reset_button.configure(state=backward_state)
         self._back_button.configure(state=backward_state)
@@ -133,7 +138,7 @@ class SimulationViewer:
         state: SimulationState,
         positions: dict[int, tuple[float, float]],
     ) -> None:
-        """Draw connections behind the zone and drone markers."""
+        """ゾーンやドローンの背後に接続の線を描く。"""
         for connection in state.drone_map.get_connections():
             self._canvas.create_line(
                 *positions[connection.zone_a_id],
@@ -146,7 +151,7 @@ class SimulationViewer:
         state: SimulationState,
         positions: dict[int, tuple[float, float]],
     ) -> None:
-        """Draw fixed-size zone markers, names, and capacity labels."""
+        """固定サイズのゾーン記号、名前、機数と容量の表示を描く。"""
         for zone in state.drone_map.get_zones():
             x, y = positions[zone.id]
             color = self._resolve_color(zone.color)
@@ -180,7 +185,7 @@ class SimulationViewer:
         state: SimulationState,
         positions: dict[int, tuple[float, float]],
     ) -> None:
-        """Group drones by location and draw at most five per group."""
+        """機体を位置ごとにまとめ、各位置に最大5個の記号を描く。"""
         zone_counts: dict[int, int] = {}
         connection_counts: dict[int, int] = {}
         for drone in state.drones.values():
@@ -207,7 +212,7 @@ class SimulationViewer:
             )
 
     def _draw_markers(self, x: float, y: float, count: int) -> None:
-        """Draw a centered row of small, offset diamond markers."""
+        """中心を基準に少しずつ横へずらした、小さな菱形を描く。"""
         visible = min(count, 5)
         for index in range(visible):
             marker_x = x + (index - (visible - 1) / 2) * 8
@@ -218,7 +223,7 @@ class SimulationViewer:
             )
 
     def _resolve_color(self, color: str | None) -> str:
-        """Use Tk-recognized colors and fall back to white otherwise."""
+        """Tkが認識できる指定色を使用し、未指定・未対応なら白にする。"""
         if not color:
             return "white"
         try:

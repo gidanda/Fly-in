@@ -1,11 +1,11 @@
-"""Zone definitions for a Fly-in map."""
+"""Fly-inマップのゾーン定義。"""
 
 from dataclasses import dataclass
 from enum import Enum
 
 
 class ZoneRole(str, Enum):
-    """Describe a zone's role within the whole map."""
+    """マップ全体におけるゾーンの役割を表す。"""
 
     START = "start"
     END = "end"
@@ -13,7 +13,7 @@ class ZoneRole(str, Enum):
 
 
 class ZoneType(str, Enum):
-    """Describe the movement behavior of a zone."""
+    """移動コストや進入可否を決めるゾーン種別を表す。"""
 
     NORMAL = "normal"
     PRIORITY = "priority"
@@ -23,7 +23,7 @@ class ZoneType(str, Enum):
 
 @dataclass(frozen=True)
 class Zone:
-    """Store the static definition of one map zone."""
+    """1つのゾーンの静的な定義を保持する。"""
 
     id: int
     name: str
@@ -35,11 +35,11 @@ class Zone:
     color: str | None
 
     def is_accessible(self) -> bool:
-        """Return whether drones are allowed to enter this zone."""
+        """このゾーンにドローンが進入できるかを返す。"""
         return self.zone_type is not ZoneType.BLOCKED
 
     def movement_cost(self) -> int | None:
-        """Return the turns required to enter, or None when blocked."""
+        """進入に必要なターン数を返し、進入禁止ならNoneを返す。"""
         if not self.is_accessible():
             return None
         if self.zone_type is ZoneType.RESTRICTED:
@@ -47,5 +47,5 @@ class Zone:
         return 1
 
     def has_unlimited_capacity(self) -> bool:
-        """Return whether this zone has no occupancy limit."""
+        """このゾーンの滞在容量が無制限かを返す。"""
         return self.max_drones is None

@@ -1,4 +1,4 @@
-"""Dynamic state shared by one Fly-in simulation."""
+"""Fly-inシミュレーション全体の動的な状態。"""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -15,7 +15,7 @@ from fly_in.turn_projection import TurnProjection
 
 @dataclass(frozen=True)
 class _ResolvedMove:
-    """Store one map-resolved move during a turn preview."""
+    """仮実行中に、マップ情報を補完した1機分の移動を保持する。"""
 
     destination_zone_id: int
     connection_id: int
@@ -23,10 +23,10 @@ class _ResolvedMove:
 
 
 class SimulationState:
-    """Own every drone and expose facts about the current simulation."""
+    """全ドローンを保持し、現在のシミュレーション状態を提供する。"""
 
     def __init__(self, scenario: Scenario) -> None:
-        """Place all scenario drones at the start zone on turn zero."""
+        """ターン0の初期状態として、全ドローンをスタートに配置する。"""
         self._drone_map = scenario.drone_map
         self._drones = {
             drone_id: Drone(
@@ -45,7 +45,7 @@ class SimulationState:
         drones: Mapping[int, Drone],
         current_turn: int,
     ) -> "SimulationState":
-        """Build a next-turn snapshot from caller-validated data."""
+        """呼び出し側で検証済みのデータから、次ターンの状態を構築する。"""
         simulation = cls.__new__(cls)
         simulation._drone_map = drone_map
         simulation._drones = dict(drones)
@@ -55,21 +55,21 @@ class SimulationState:
 
     @property
     def drone_map(self) -> DroneMap:
-        """Return the static map used by this simulation."""
+        """このシミュレーションで使用する静的なマップを返す。"""
         return self._drone_map
 
     @property
     def drones(self) -> Mapping[int, Drone]:
-        """Return a read-only view of drones indexed by ID."""
+        """ドローンIDをキーとする辞書の読み取り専用ビューを返す。"""
         return self._drones_view
 
     @property
     def current_turn(self) -> int:
-        """Return the current turn number."""
+        """現在のターン番号を返す。"""
         return self._current_turn
 
     def get_zone_occupancy(self, zone_id: int) -> int:
-        """Return the number of drones currently occupying a zone."""
+        """指定ゾーンに現在滞在している機数を返す。"""
         self._drone_map.get_zone(zone_id)
         return sum(
             isinstance(drone.state, AtZone)
@@ -78,7 +78,7 @@ class SimulationState:
         )
 
     def get_connection_occupancy(self, connection_id: int) -> int:
-        """Return the number of drones currently using a connection."""
+        """指定接続上を現在移動している機数を返す。"""
         self._drone_map.get_connection(connection_id)
         return sum(
             isinstance(drone.state, InTransit)
@@ -87,14 +87,14 @@ class SimulationState:
         )
 
     def all_drones_finished(self) -> bool:
-        """Return whether every drone has reached the end zone."""
+        """全ドローンがゴールに到着済みかを返す。"""
         return all(
             isinstance(drone.state, Finished)
             for drone in self._drones.values()
         )
 
     def preview_turn(self, plan: TurnPlan) -> TurnProjection:
-        """Return a validated next-turn projection without changing state."""
+        """現在の状態を変更せず、検証済みの1ターン分の仮実行結果を返す。"""
         if plan.execution_turn != self._current_turn + 1:
             raise TurnValidationError(
                 f"Plan execution_turn must be {self._current_turn + 1}, "
@@ -122,7 +122,7 @@ class SimulationState:
         self,
         plan: TurnPlan,
     ) -> dict[int, _ResolvedMove]:
-        """Validate and enrich every newly planned movement."""
+        """新規の移動指示を検証し、接続IDや移動コストを補完する。"""
         resolved_moves: dict[int, _ResolvedMove] = {}
 
         for move in plan.moves:
@@ -180,7 +180,11 @@ class SimulationState:
         self,
         resolved_moves: Mapping[int, _ResolvedMove],
     ) -> dict[int, frozenset[int]]:
-        """Collect connection users, trusting validated existing transit."""
+        """接続容量の検証対象となる機体を、接続IDごとに集める。
+
+        既存の移動中状態は検証済みとして扱い、このターンに到着する機体を除く。
+        新規の移動は、同じターン内に到着する場合も対象に含める。
+        """
         mutable_users: dict[int, set[int]] = {}
 
         for drone in self._drones.values():
@@ -207,7 +211,7 @@ class SimulationState:
         self,
         connection_users: Mapping[int, frozenset[int]],
     ) -> None:
-        """Reject a turn that overuses any connection."""
+        """接続容量を超過する移動計画を拒否する。"""
         for connection_id, drone_ids in connection_users.items():
             connection = self._drone_map.get_connection(connection_id)
             if len(drone_ids) > connection.max_capacity:
@@ -220,7 +224,7 @@ class SimulationState:
         self,
         resolved_moves: Mapping[int, _ResolvedMove],
     ) -> dict[int, Drone]:
-        """Return every drone after one complete simulated turn."""
+        """1ターン分の移動を仮実行した後の全ドローンを返す。"""
         projected_drones = dict(self._drones)
 
         for drone_id, drone in self._drones.items():
@@ -253,7 +257,7 @@ class SimulationState:
         self,
         projected_drones: Mapping[int, Drone],
     ) -> None:
-        """Reject a turn whose end state overfills any zone."""
+        """ターン終了時のゾーン滞在数が容量を超える移動計画を拒否する。"""
         occupancy: dict[int, int] = {}
 
         for drone in projected_drones.values():

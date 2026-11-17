@@ -1,4 +1,4 @@
-"""Parse Fly-in map files into validated scenarios."""
+"""Fly-inマップファイルを解析し、検証済みのシナリオを構築する。"""
 
 import re
 from collections.abc import Mapping
@@ -29,22 +29,22 @@ _CONNECTION_PATTERN = re.compile(
 
 
 class MapParser:
-    """Convert one map file into a Scenario without retaining state."""
+    """解析の進捗をインスタンスに保持せず、マップをScenarioへ変換する。"""
 
     def parse_file(self, file_path: str | Path) -> Scenario:
-        """Parse and validate a map file.
+        """マップファイルを解析し、内容を検証する。
 
         Args:
-            file_path: Path to the UTF-8 encoded map file.
+            file_path: UTF-8で記述されたマップファイルのパス。
 
         Returns:
-            A scenario containing the parsed map and drone count.
+            読み取ったマップとドローン数を保持するシナリオ。
 
         Raises:
-            FileNotFoundError: If the map file does not exist.
-            PermissionError: If the map file cannot be read.
-            UnicodeDecodeError: If the map file is not valid UTF-8.
-            MapParseError: If the file content is invalid.
+            FileNotFoundError: マップファイルが存在しない場合。
+            PermissionError: マップファイルの読み取り権限がない場合。
+            UnicodeDecodeError: ファイルが正しいUTF-8ではない場合。
+            MapParseError: ファイルの内容が不正な場合。
         """
         path = Path(file_path)
         drone_count: int | None = None
@@ -225,7 +225,7 @@ class MapParser:
         line_number: int,
         line: str,
     ) -> int:
-        """Parse one drone-count definition."""
+        """ドローン数の定義を1行解析する。"""
         match = _DRONE_COUNT_PATTERN.fullmatch(line)
         if match is None:
             raise MapParseError(
@@ -261,7 +261,7 @@ class MapParser:
         line: str,
         zone_id: int,
     ) -> Zone:
-        """Parse one zone definition into a Zone."""
+        """ゾーン定義を1行解析し、Zoneを構築する。"""
         match = _ZONE_PATTERN.fullmatch(line)
         if match is None:
             raise MapParseError(
@@ -367,7 +367,7 @@ class MapParser:
         connection_id: int,
         zone_ids_by_name: Mapping[str, int],
     ) -> Connection:
-        """Parse one connection definition into a Connection."""
+        """接続定義を1行解析し、Connectionを構築する。"""
         match = _CONNECTION_PATTERN.fullmatch(line)
         if match is None:
             raise MapParseError(
@@ -445,7 +445,7 @@ class MapParser:
         line: str,
         metadata_text: str | None,
     ) -> dict[str, str]:
-        """Parse a shared key-value metadata block."""
+        """共通形式のメタデータを解析し、キーと値の辞書を返す。"""
         if metadata_text is None:
             return {}
 

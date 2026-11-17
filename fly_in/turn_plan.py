@@ -1,4 +1,4 @@
-"""Value objects describing movements planned for one turn."""
+"""1ターン分の移動計画を表す値オブジェクト。"""
 
 from dataclasses import dataclass
 
@@ -8,13 +8,13 @@ from fly_in.validation import validate_positive_integer
 
 @dataclass(frozen=True)
 class MoveIntent:
-    """Describe one drone's intention to start moving this turn."""
+    """そのターンに1機のドローンが移動を開始する指示を表す。"""
 
     drone_id: int
     destination_zone_id: int
 
     def __post_init__(self) -> None:
-        """Validate the drone and destination identifiers."""
+        """ドローンIDと移動先ゾーンIDを検証する。"""
         validate_positive_integer(self.drone_id, "drone_id")
         validate_positive_integer(
             self.destination_zone_id,
@@ -24,13 +24,13 @@ class MoveIntent:
 
 @dataclass(frozen=True)
 class TurnPlan:
-    """Collect every new movement intended for one simulation turn."""
+    """実行ターン番号と、そのターンに新しく開始する全移動を保持する。"""
 
     execution_turn: int
     moves: tuple[MoveIntent, ...]
 
     def __post_init__(self) -> None:
-        """Require an immutable collection with one move per drone."""
+        """実行ターンと、機体ごとに重複のない変更不能な移動列を検証する。"""
         validate_positive_integer(self.execution_turn, "execution_turn")
         if not isinstance(self.moves, tuple):
             raise ValueError("moves must be a tuple")
