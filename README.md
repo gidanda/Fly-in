@@ -40,16 +40,25 @@ make install
 
 ### Running a simulation
 
-Pass a map through the `MAP` variable:
+Map files are not bundled with the submission. Obtain the map archive from
+the subject attachments and extract it separately, or save the complete input
+example below as a UTF-8 text file.
 
 ```sh
-make run MAP=maps/easy/01_linear_path.txt
+tar -xzvf /path/to/maps.tar.gz
+```
+
+Pass the path to an existing map through the `MAP` variable. Replace
+`/path/to/map.txt` below with your actual map path:
+
+```sh
+make run MAP=/path/to/map.txt
 ```
 
 The equivalent direct command is:
 
 ```sh
-.venv/bin/python -m fly_in maps/easy/01_linear_path.txt
+.venv/bin/python -m fly_in /path/to/map.txt
 ```
 
 ### Graphical viewer
@@ -57,13 +66,13 @@ The equivalent direct command is:
 Display the recorded simulation in a separate Tk window:
 
 ```sh
-make gui MAP=maps/easy/01_linear_path.txt
+make gui MAP=/path/to/map.txt
 ```
 
 The equivalent direct command uses `--gui`:
 
 ```sh
-.venv/bin/python -m fly_in maps/easy/01_linear_path.txt --gui
+.venv/bin/python -m fly_in /path/to/map.txt --gui
 ```
 
 The simulation first prints its usual terminal output and records the states.
@@ -84,14 +93,13 @@ plus a graphical desktop. Terminal-only execution does not import tkinter.
 ### Debugging
 
 ```sh
-make debug MAP=maps/easy/01_linear_path.txt
+make debug MAP=/path/to/map.txt
 ```
 
 ### Quality checks
 
 ```sh
 make lint
-.venv/bin/python -m pytest
 ```
 
 `make lint` runs both `flake8` and `mypy` with the options required by the
@@ -193,7 +201,7 @@ Terminal output is always plain text, including interactive runs. Zone colors
 are displayed only in the GUI. Logs can be redirected for automated evaluation:
 
 ```sh
-make run MAP=maps/easy/01_linear_path.txt > result.txt
+make run MAP=/path/to/map.txt > result.txt
 ```
 
 Use `make gui MAP=<map_file>` for a visual representation of the simulation.
@@ -278,8 +286,9 @@ responsible for choosing an efficient plan.
 
 ## Performance
 
-The following results were measured with the included maps and the current
-greedy planner. A lower turn count is better.
+The following results were measured during development using the maps
+distributed with the subject and the current greedy planner. Those map files
+are not included in the submission. A lower turn count is better.
 
 | Map | Drones | Result | Optimum (subject v3.0) |
 | --- | ---: | ---: | ---: |
@@ -297,14 +306,18 @@ greedy planner. A lower turn count is better.
 All nine mandatory maps match their listed optima and satisfy the required
 25% margin. The optional challenger map is two turns above its optimum.
 
-## Testing
+## Verification performed during development
 
-The test suite covers parsing, error context, graph lookup, shortest-cost
-analysis, immutable drone transitions, turn-plan validation, simultaneous
+The development test suite covered parsing, error context, graph lookup,
+shortest-cost analysis, immutable drone transitions, turn-plan validation,
+simultaneous
 capacity handling, restricted movement, saved lookahead plans, planning,
 formatting, GUI controls, the runner, and the CLI entry point.
 
-All distributed maps are also parsed and executed as integration checks.
+All subject-provided maps were also parsed and executed as integration checks.
+The test suite and internal design documents are not included in the
+submission. These checks describe verification performed during development,
+not additional files required to run the submitted program.
 
 ## Resources
 
