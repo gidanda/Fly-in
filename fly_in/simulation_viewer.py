@@ -17,10 +17,12 @@ class SimulationViewer:
 
     def __init__(self, states: Sequence[SimulationState]) -> None:
         """ウィンドウを作成し、履歴の先頭の状態を表示する。"""
+        # statesの確認
         if not states:
             raise VisualizationError("State history must not be empty")
         self._states = states
         self._current_index = 0
+        # ウィンドウ・描画エリア作成
         try:
             self._window = tk.Tk()
         except tk.TclError as error:
@@ -32,11 +34,15 @@ class SimulationViewer:
             self._window, width=700, height=700,
             background="#20242b", highlightthickness=0,
         )
+        # ウィンドウサイズに合わせて描画エリアを配置
         self._canvas.pack(fill=tk.BOTH, expand=True)
+        # ターン数表示の作成・配置
         self._turn_label = ttk.Label(self._window)
         self._turn_label.pack(pady=6)
+        # ボタンのフレーム作成・配置
         controls = ttk.Frame(self._window)
         controls.pack(pady=(0, 10))
+        # メソッドを登録した各種ボタンをフレーム内に作成・左から配置
         self._reset_button = ttk.Button(
             controls, text="Reset", command=self._reset,
         )
@@ -49,7 +55,9 @@ class SimulationViewer:
             controls, text="Next turn", command=self._next_turn,
         )
         self._next_button.pack(side=tk.LEFT, padx=4)
+        # サイズ変更イベントに対応するメソッドの登録
         self._canvas.bind("<Configure>", self._on_resize)
+        # 最初の描画
         self._draw_state()
 
     def run(self) -> None:
@@ -75,22 +83,26 @@ class SimulationViewer:
 
     def _on_resize(self, event: tk.Event[tk.Misc]) -> None:
         """Canvasのサイズ変更に合わせ、マップを再描画する。"""
+        # bindで指定されたメソッドはイベントを受け取る
         self._draw_state()
 
     def _get_positions(self) -> dict[int, tuple[float, float]]:
         """縦横共通の倍率で、マップ座標をCanvas内に収める。"""
+        # zone座標の最大最小を取得
         zones = self._states[self._current_index].drone_map.get_zones()
         min_x = min(zone.x for zone in zones)
         max_x = max(zone.x for zone in zones)
         min_y = min(zone.y for zone in zones)
         max_y = max(zone.y for zone in zones)
-        # Before the first layout event, use the requested canvas dimensions.
+        # Canvasのサイズを取得
+        # 初回の配置が確定する前は、Canvas作成時に指定したサイズを使う。
         width = self._canvas.winfo_width()
         height = self._canvas.winfo_height()
         if width <= 1:
             width = int(self._canvas.cget("width"))
         if height <= 1:
             height = int(self._canvas.cget("height"))
+        # 座標の縦横幅・倍率取得→値の小さい方を倍率として採用
         span_x = max_x - min_x
         span_y = max_y - min_y
         scales = [
@@ -100,6 +112,7 @@ class SimulationViewer:
         scale = min(scales)
         if scale == float("inf"):
             scale = 1.0
+        # 各ゾーンに対し、画面の中心＋マップの中心からの距離×倍率を辞書形式で返す
         return {
             zone.id: (
                 width / 2 + (zone.x - (min_x + max_x) / 2) * scale,
@@ -110,21 +123,25 @@ class SimulationViewer:
 
     def _draw_state(self) -> None:
         """接続・ゾーン・ドローンを再描画し、表示と操作部品を更新する。"""
+        # ゾーンの座標情報を取得し、各パーツを描画
         state = self._states[self._current_index]
         positions = self._get_positions()
         self._canvas.delete("all")
         self._draw_connections(state, positions)
         self._draw_zones(state, positions)
         self._draw_drones(state, positions)
+        # ターン数表示のパーツにテキスト設定追加
         self._turn_label.configure(
             text=(
                 f"Turn: {state.current_turn}/"
                 f"{self._states[-1].current_turn}"
             )
         )
+        # 履歴の先頭（通常はターン0の初期状態）では、リセット・戻るを無効化する
         backward_state = tk.DISABLED if self._current_index == 0 else tk.NORMAL
         self._reset_button.configure(state=backward_state)
         self._back_button.configure(state=backward_state)
+        # 最終ターンの場合無効化する設定を、次へボタンに適用し作成
         self._next_button.configure(
             state=(
                 tk.DISABLED
@@ -153,20 +170,25 @@ class SimulationViewer:
     ) -> None:
         """固定サイズのゾーン記号、名前、機数と容量の表示を描く。"""
         for zone in state.drone_map.get_zones():
+            # zone情報取得
             x, y = positions[zone.id]
             color = self._resolve_color(zone.color)
+            # 指定したサイズの四角に収まる楕円を描画（この場合は正円）
             self._canvas.create_oval(
                 x - 20, y - 20, x + 20, y + 20,
                 fill=color, outline="white", width=2,
             )
+            # スタート・エンドの場合は二重丸に描画
             if zone.role in (ZoneRole.START, ZoneRole.END):
                 self._canvas.create_oval(
                     x - 25, y - 25, x + 25, y + 25,
                     outline=color, width=2,
                 )
+            # zone上方にzone_name描画
             self._canvas.create_text(
                 x, y - 38, text=zone.name, fill="white",
             )
+            # zone容量および滞在機体数を取得して表示
             count = state.get_zone_occupancy(zone.id)
             if zone.role is ZoneRole.END:
                 count += sum(
@@ -186,6 +208,7 @@ class SimulationViewer:
         positions: dict[int, tuple[float, float]],
     ) -> None:
         """機体を位置ごとにまとめ、各位置に最大5個の記号を描く。"""
+        # 位置ごとに機体数を集計する。未登録なら0として、機体ごとに1を加える
         zone_counts: dict[int, int] = {}
         connection_counts: dict[int, int] = {}
         for drone in state.drones.values():
@@ -200,6 +223,7 @@ class SimulationViewer:
                 zone_counts[zone_id] = zone_counts.get(zone_id, 0) + 1
         for zone_id, count in zone_counts.items():
             self._draw_markers(*positions[zone_id], count)
+        # 接続の中点にドローンを描画
         for connection in state.drone_map.get_connections():
             count = connection_counts.get(connection.id, 0)
             ax, ay = positions[connection.zone_a_id]
@@ -214,8 +238,10 @@ class SimulationViewer:
     def _draw_markers(self, x: float, y: float, count: int) -> None:
         """中心を基準に少しずつ横へずらした、小さな菱形を描く。"""
         visible = min(count, 5)
+        # 中央揃えで８ピクセル間隔で配置
         for index in range(visible):
             marker_x = x + (index - (visible - 1) / 2) * 8
+            # 指定した座標のポリゴンを描画
             self._canvas.create_polygon(
                 marker_x, y - 5, marker_x + 4, y,
                 marker_x, y + 5, marker_x - 4, y,

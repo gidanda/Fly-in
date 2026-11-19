@@ -48,7 +48,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         runner = SimulationRunner(planner, formatter)
         states = runner.run(state)
         if arguments.gui:
-            # Keep terminal-only runs independent of the optional Tk runtime.
+            # ターミナルのみの実行では、GUI用のTk環境を必要としないようにする。
             try:
                 from fly_in.simulation_viewer import SimulationViewer
             except ImportError as error:
