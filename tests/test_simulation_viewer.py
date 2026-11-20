@@ -83,7 +83,7 @@ def test_replays_history_without_changing_snapshots(
     viewer._next_turn()
     texts = [call.kwargs.get("text")
              for call in widgets.create_text.call_args_list]
-    assert "2/2" in texts
+    assert "On: 2  Cap: 2" in texts
     viewer._next_turn()
     assert viewer._current_index == 2
     cast(MagicMock, viewer._next_button).configure.assert_called_with(
@@ -92,6 +92,7 @@ def test_replays_history_without_changing_snapshots(
     texts = [call.kwargs.get("text")
              for call in widgets.create_text.call_args_list]
     assert "2/∞" in texts
+    assert "On: 0  Cap: 2" in texts
     viewer._next_turn()
     assert viewer._current_index == 2
     assert [state.current_turn for state in history] == [0, 1, 2]

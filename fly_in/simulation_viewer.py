@@ -231,8 +231,9 @@ class SimulationViewer:
             x, y = (ax + bx) / 2, (ay + by) / 2
             self._draw_markers(x, y, count)
             self._canvas.create_text(
-                x, y + 18, text=f"{count}/{connection.max_capacity}",
-                fill="#66e6ff",
+                x, y + 18,
+                text=f"On: {count}  Cap: {connection.max_capacity}",
+                fill="#66e6ff", anchor=tk.N,
             )
 
     def _draw_markers(self, x: float, y: float, count: int) -> None:

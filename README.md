@@ -83,7 +83,10 @@ Next turn is disabled at the last state and re-enabled when going back.
 Resizing the window fits the map to the canvas.
 Zones use their specified colors (white for missing or unrecognized colors),
 start/end zones have double outlines, and small diamonds represent drones.
-Labels show drone count/capacity; large groups display at most five diamonds.
+Zone labels show drone count/capacity. Connection labels show current transit
+count and capacity separately on one line: `On: N  Cap: C`.
+Diamonds indicate drones currently in transit.
+Large groups display at most five diamonds.
 In-transit drones appear at connection midpoints and delivered drones at the
 end zone. Unlimited zone capacity is displayed as `∞`.
 
